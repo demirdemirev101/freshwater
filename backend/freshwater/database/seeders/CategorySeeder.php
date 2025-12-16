@@ -31,13 +31,13 @@ class CategorySeeder extends Seeder
         | ЗА ДОМА – НИВО 2
         |--------------------------------------------------------------------------
         */
-        $homeWaterSystems = Category::create([
+        Category::create([
             'name' => 'Системи за вода',
             'slug' => 'za-doma-sistemi-za-voda',
             'parent_id' => $home->id,
         ]);
 
-        $homeHydrogenWater = Category::create([
+         Category::create([
             'name' => 'Водородна вода',
             'slug' => 'za-doma-vodorodna-voda',
             'parent_id' => $home->id,
@@ -77,13 +77,13 @@ class CategorySeeder extends Seeder
         | ЗА БИЗНЕСА – НИВО 2
         |--------------------------------------------------------------------------
         */
-        $businessWaterSystems = Category::create([
+        Category::create([
             'name' => 'Системи за вода',
             'slug' => 'za-biznesa-sistemi-za-voda',
             'parent_id' => $business->id,
         ]);
 
-        $businessHoReCa = Category::create([
+        Category::create([
             'name' => 'ХоРеКа',
             'slug' => 'za-biznesa-horeka',
             'parent_id' => $business->id,
