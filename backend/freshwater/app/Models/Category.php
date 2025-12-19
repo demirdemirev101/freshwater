@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 class Category extends Model
 {
@@ -28,5 +29,14 @@ class Category extends Model
     public function products() : BelongsToMany
     {
         return $this->belongsToMany(Product::class);
+    }
+
+    public static function booted()
+    {
+        static::saving(function (Category $category){
+            if($category->isDirty('name')){
+                $category->slug = Str::slug($category->name);
+            }
+        });
     }
 }

@@ -17,9 +17,6 @@ class CategoryInfolist
                 TextEntry::make('parent_id')
                     ->numeric()
                     ->placeholder('-'),
-                TextEntry::make('deleted_at')
-                    ->dateTime()
-                    ->visible(fn (Category $record): bool => $record->trashed()),
                 TextEntry::make('created_at')
                     ->dateTime()
                     ->placeholder('-'),

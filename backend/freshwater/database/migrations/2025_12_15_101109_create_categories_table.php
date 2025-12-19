@@ -21,8 +21,6 @@ return new class extends Migration
                 ->nullable()
                 ->constrained('categories')
                 ->nullOnDelete();
-            
-            $table->softDeletes();
 
             $table->timestamps();
         });
