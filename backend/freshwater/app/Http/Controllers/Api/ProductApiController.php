@@ -10,7 +10,10 @@ class ProductApiController extends Controller
 {
     public function index()
     {
-        $products = Product::with(['category', 'images'])->get();
+        $products = Product::with([
+           'categories:id,name,slug',
+            'images:id,product_id,image_path,is_primary,sort_order',
+        ])->get();
 
         return response()->json($products);
     }
