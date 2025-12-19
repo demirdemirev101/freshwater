@@ -44,7 +44,7 @@ class CategorySeeder extends Seeder
         ]);
 
         $homeAccessories = Category::create([
-            'name' => 'Аксесоари',
+            'name' => 'Аксесоари за дома',
             'slug' => 'za-doma-aksesoari',
             'parent_id' => $home->id,
         ]);
@@ -55,7 +55,7 @@ class CategorySeeder extends Seeder
         |--------------------------------------------------------------------------
         */
         Category::create([
-            'name' => 'Бутилки',
+            'name' => 'Бутилки за дома',
             'slug' => 'za-doma-butilki',
             'parent_id' => $homeAccessories->id,
         ]);
@@ -67,7 +67,7 @@ class CategorySeeder extends Seeder
         ]);
 
         Category::create([
-            'name' => 'Филтри и консумативи',
+            'name' => 'Филтри и консумативи за дома',
             'slug' => 'za-doma-filtri-i-konsumativi',
             'parent_id' => $homeAccessories->id,
         ]);
@@ -78,7 +78,7 @@ class CategorySeeder extends Seeder
         |--------------------------------------------------------------------------
         */
         Category::create([
-            'name' => 'Системи за вода',
+            'name' => 'Системи за вода за бизнеса',
             'slug' => 'za-biznesa-sistemi-za-voda',
             'parent_id' => $business->id,
         ]);
@@ -90,7 +90,7 @@ class CategorySeeder extends Seeder
         ]);
 
         $businessAccessories = Category::create([
-            'name' => 'Аксесоари',
+            'name' => 'Аксесоари за бизнеса',
             'slug' => 'za-biznesa-aksesoari',
             'parent_id' => $business->id,
         ]);
@@ -101,13 +101,13 @@ class CategorySeeder extends Seeder
         |--------------------------------------------------------------------------
         */
         Category::create([
-            'name' => 'Филтри и консумативи',
+            'name' => 'Филтри и консумативи за бизнеса',
             'slug' => 'za-biznesa-filtri-i-konsumativi',
             'parent_id' => $businessAccessories->id,
         ]);
 
         Category::create([
-            'name' => 'Бутилки',
+            'name' => 'Бутилки за бизнеса',
             'slug' => 'za-biznesa-butilki',
             'parent_id' => $businessAccessories->id,
         ]);
