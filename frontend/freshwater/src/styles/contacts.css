@@ -1,0 +1,268 @@
+.contact-hero {
+  height: 420px;
+
+  background: linear-gradient(
+      hsla(176, 85%, 38%, 0.73),
+      rgba(28, 86, 137, 0.745)
+    ),
+    url("/public/images/office.jpg") center / cover no-repeat;
+    font-family: "Montserrat", sans-serif;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  color: white;
+}
+
+.contact-hero h1 {
+  font-size: 54px;        /* по-голям надпис */
+  font-weight: 650;      /* по-плътен */
+  letter-spacing: 1px;  /* леко раздалечени букви */
+  margin-bottom: 28px;
+}
+
+.hero-btn {
+  padding: 14px 36px;          /* по-широк и леко по-висок */
+  font-size: 16px;             /* по-едър текст */
+  font-weight: 500;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #1e9c8b, #3dd6b5);
+  color: #ffffff;              /* бял текст по подразбиране */
+  border: none;
+  cursor: pointer;
+  transition: all 0.25s ease;  /* плавни анимации */
+}
+
+.hero-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+  background: linear-gradient(90deg, #25979b, #2fcfa8);
+}
+
+.hero-btn:hover {
+  transform: scale(1.05);      /* леко уголемяване */
+}
+
+.hero-btn:hover {
+  color: #0b4fa2;              /* тъмно син САМО за текста */
+}
+
+.hero-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 6px 12px rgba(69, 68, 68, 0.327);
+}
+
+/* ===== CONTACT CARDS WRAPPER ===== */
+.contact-cards {
+  display: flex;
+  gap: 32px;
+  justify-content: center;
+  margin-top: 40px;
+}
+
+/* ===== SINGLE CARD ===== */
+.contact-card {
+  position: relative;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 36px 28px;
+  text-align: center;
+  width: 320px;
+
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.08);
+  transition: 
+    transform 0.35s ease,
+    box-shadow 0.35s ease;
+  cursor: pointer;
+}
+
+/* ===== GRADIENT BORDER (HOVER) ===== */
+.contact-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  padding: 2px;
+  background: linear-gradient(90deg, #2fa4a9, #3bd2b0);
+
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  pointer-events: none;
+}
+
+/* ===== ICON CIRCLE ===== */
+.icon-circle {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2bb9a6, #3dd6b5);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 18px;
+
+  transition: 
+    transform 0.35s ease,
+    box-shadow 0.35s ease,
+    background 0.35s ease;
+}
+
+.icon-circle svg {
+  font-size: 28px;
+  color: #ffffff;
+  transition: transform 0.35s ease;
+}
+
+/* ===== TEXT ===== */
+.contact-card p {
+  font-size: 16px;
+  line-height: 1.6;
+  color: #222;
+}
+
+/* ===== HOVER EFFECTS ===== */
+.contact-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 22px 48px rgba(0, 0, 0, 0.16);
+}
+
+.contact-card:hover::before {
+  opacity: 1;
+}
+
+.contact-card:hover .icon-circle {
+  transform: scale(1.12);
+  background: linear-gradient(135deg, #14deb6, #2ab1b8);
+  box-shadow: 0 0 18px rgba(10, 195, 68, 0.586);
+}
+
+.contact-card:hover .icon-circle svg {
+  transform: rotate(-8deg) scale(1.05);
+}
+
+/* ===== ACTIVE (CLICK) ===== */
+.contact-card:active {
+  transform: translateY(-3px) scale(0.98);
+}
+
+.map iframe {
+  width: 100%;
+  height: 450px;
+  border: 0;
+}
+
+.map-wrapper {
+  max-width: 95%;
+  margin: 0 auto;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.map-wrapper:hover {
+  transform: translateY(-4px);
+  transition: 0.3s ease;
+}
+
+.map-section {
+  background: rgba(18, 183, 131, 0.578); /* лек фон около картата */
+  padding: 80px 0;
+}
+
+.map-wrapper {
+  max-width: 1200px;        /* свива ширината */
+  margin: 0 auto;
+  border-radius: 16px;
+  overflow: hidden;         /* заобля iframe-а */
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+}
+
+.map-wrapper iframe {
+  width: 100%;
+  height: 420px;            /* по-свита височина */
+  border: 0;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+}
+
+.field input,
+.field textarea {
+  padding: 16px;
+  border-radius: 30px;
+  border: 1px solid #ddd;
+  font-size: 15px;
+  transition: all 0.25s ease;
+}
+
+.field textarea {
+  border-radius: 20px;
+  height: 140px;
+  resize: none;
+}
+
+/* ERROR STATE */
+.field.error input,
+.field.error textarea {
+  border-color: #ff4d4f;
+  box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.15);
+}
+
+.error-text {
+  color: #ff4d4f;
+  font-size: 13px;
+  margin-top: 6px;
+}
+
+/* FOCUS */
+.field input:focus,
+.field textarea:focus {
+  outline: none;
+  border-color: #2fcfa8;
+  box-shadow: 0 0 0 2px rgba(47, 207, 168, 0.2);
+}
+
+/* BUTTON */
+.contact-form button {
+  margin-top: 20px;
+  align-self: center;
+  padding: 14px 40px;
+  background: linear-gradient(90deg, #2fa4a9, #3bd2b0);
+  border: none;
+  color: white;
+  font-size: 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.25s ease;
+}
+
+/* ===== FORM SECTION (spacing from cards) ===== */
+.contact-form-section {
+  margin-top: 80px; /* разстояние от картите */
+  padding-bottom: 120px;
+  display: flex;
+  justify-content: center;
+}
+
+/* ===== FORM CONTAINER ===== */
+.contact-form {
+  width: 100%;
+  max-width: 720px; /* ТОВА оправя разтягането */
+  display: flex;
+  flex-direction: column;
+  gap: 26px; /* разстояние между field-овете */
+}
+
+
+
+

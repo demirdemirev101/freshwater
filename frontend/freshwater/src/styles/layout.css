@@ -1,0 +1,275 @@
+/* HEADER */
+.header {
+  position: fixed;
+  top: 0;
+  width: 100%;
+  background: white;
+  z-index: 1000;
+  border-bottom: 1px solid #eee;
+}
+
+/* контейнерът НЕ се променя */
+.header-container {
+  max-width: 1300px;
+  margin: 0 auto;
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* LOGO */
+.logo-img {
+  height: 66px; /* нормален размер */
+  transition: height 0.3s ease;
+}
+
+.logo-img--small {
+  height: 36px; /* като оригинала */
+}
+
+/* NAV */
+.nav {
+  display: flex;
+  gap: 35px;
+}
+
+.nav a {
+  font-family: "Montserrat", sans-serif;
+  font-weight: 500;              /* ключово */
+  font-size: 15px;
+  letter-spacing: 0.1em;        /* много важно */
+  text-transform: uppercase;     /* задължително */
+  color: #0b4fa3;                /* синьото от оригинала */
+  text-decoration: none;
+  transition: color 0.25s ease;
+}
+
+
+.nav a:hover {
+  color: #1bb6e3;
+}
+
+.nav-link {
+  text-decoration: none;
+  color: #005aa9;
+  font-weight: 380;
+  font-size: 17px;
+}
+
+.nav-link:hover {
+  color: #4fc3f7;
+}
+
+/* АКТИВНА СТРАНИЦА */
+.nav-link.active {
+  color: #4fc3f7;
+}
+
+/* RIGHT */
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+/* SEARCH */
+.search-box {
+  display: flex;
+  align-items: center;
+  border: 1px solid #2a7cc7;
+  border-radius: 999px;
+  padding: 5px 20px;
+  height: 18px;
+}
+
+.search-icon {
+  width: 16px;
+  height: 16px;
+  stroke: #666363aa;
+  stroke-width: 2;
+  fill: none;
+  margin-right: 8px;
+}
+
+.search-input {
+  border: none;
+  outline: none;
+  font-size: 14px;
+  width: 150px;
+}
+
+.search-input::placeholder {
+  color: #aaa;
+}
+
+.search-box:focus-within {
+  border-color: #1a5fa0;
+}
+
+/* CART */
+.cart-box {
+  position: relative;
+  cursor: pointer;
+}
+
+.cart-icon {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: #2a7cc7;
+  stroke-width: 2;
+}
+
+.cart-box:hover .cart-icon {
+  stroke: #1a5fa0;
+}
+
+.cart-count {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  background: #27c3a2;
+  color: white;
+  font-size: 11px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: grid;
+  align-items: center;
+  justify-content: center;
+}
+
+
+.footer {
+  background: linear-gradient(90deg, #2fa4a9, #3bd2b0);
+  color: white;
+  margin-top: auto;
+  padding: 50px 0 0;
+}
+
+.footer-container {
+  max-width: 1200px;
+  margin: 0 auto;
+
+  display: grid;
+  grid-template-columns: 0.9fr 1.3fr 0.7fr 0.5fr 1.2fr;
+  gap: 40px;
+
+  align-items: start;
+  padding: 0 40px;
+}
+
+.footer-col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 15px;
+}
+
+.footer-col a {
+  color: white;
+  text-decoration: none;
+  opacity: 0.9;
+}
+
+.footer-col a:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
+.footer-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 22px;
+  font-weight: bold;
+  justify-content: center;
+}
+
+.footer-logo img {
+  width: 148px;
+}
+
+.footer-socials {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+  justify-content:center;
+}
+
+.footer-socials a {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.footer-socials a:hover {
+  background: white;
+  color: #2fa4a9;
+  transform: translateY(-2px);
+}
+
+.footer-contacts {
+  max-width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 17px;
+}
+
+.contact-row {
+  display: flex;
+  align-items: flex-start; /* важно */
+  gap: 12px;
+  max-width: 280px;
+}
+
+.contact-row svg {
+  flex-shrink: 0; /* МНОГО ВАЖНО */
+  font-size: 18px;
+  margin-top: 7px; /* за да се изравни с текста */
+}
+
+.footer-col,
+.footer-contacts {
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.footer-credits {
+  background: rgba(0, 0, 0, 0.15);
+  padding: 18px 0px;
+  margin-top: 40px;
+  border-top: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.footer-credits-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  font-size: 14px;
+  color: #ffffff;
+  opacity: 0.9;
+}
+
+.footer-credits a {
+  color: #ffffff;
+  text-decoration: none;
+  transition: color 0.25s ease;
+}
+
+.footer-credits a:hover {
+  color: #0b2f4a;
+}
