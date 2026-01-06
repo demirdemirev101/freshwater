@@ -25,6 +25,12 @@ class ImagesRelationManager extends RelationManager
     protected static string $relationship = 'images';
 
     protected static ?string $title = 'Изображения';
+
+    protected function afterSave(): void
+    {
+        $this->ownerRecord->refresh();
+    }
+    
     public function form(Schema $schema): Schema
     {
         return $schema

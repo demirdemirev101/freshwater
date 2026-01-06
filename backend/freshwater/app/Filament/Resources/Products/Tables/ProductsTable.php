@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Products\Tables;
 
+use Dom\Text;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -21,8 +22,6 @@ class ProductsTable
                     ->label('Име')
                     ->sortable()
                     ->searchable(),
-                TextColumn::make('slug')
-                    ->searchable(),
                 TextColumn::make('price')
                     ->label('Цена')
                     ->placeholder('-')
@@ -33,10 +32,10 @@ class ProductsTable
                     ->placeholder('-')
                     ->money('BGN')
                     ->sortable(),
-                IconColumn::make('stock')
+                TextColumn::make('quantity')
                     ->label('Наличност')
                     ->searchable()
-                    ->boolean(),
+                    ->sortable(),
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()

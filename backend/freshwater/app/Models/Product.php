@@ -19,6 +19,7 @@ class Product extends Model
         'short_description',
         'description',
         'extra_information',
+        'quantity',
     ];
 
     protected $casts = [
