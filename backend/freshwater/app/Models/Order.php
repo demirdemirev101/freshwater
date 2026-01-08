@@ -3,12 +3,15 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Models\User;
 
 class Order extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'user_id',
         'customer_name',
@@ -35,23 +38,12 @@ class Order extends Model
     {
         return $this->hasMany(OrderItem::class);
     }
-    public function recalculateTotal() : void
-    {
-        $this->subtotal = $this->items()->sum('total');
-        $this->total = $this->subtotal + ($this->shipping_price ?? 0);
-        $this->saveQuietly();
-        $this->refresh();
-    }
     public static function booted()
     {
         static::creating(function ($order) {
             if (is_null($order->user_id)) {
                 $order->user_id = null;
             }
-        });
-
-        static::deleting(function ($order) {
-            $order->items()->delete();
         });
     }
 }

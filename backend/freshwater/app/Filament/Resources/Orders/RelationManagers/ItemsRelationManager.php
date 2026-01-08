@@ -2,10 +2,8 @@
 
 namespace App\Filament\Resources\Orders\RelationManagers;
 
-use App\Models\Product;
-use Filament\Forms\Get;
-use Filament\Forms\Set;
-use Filament\Actions\BulkActionGroup;
+use App\Models\OrderItem;
+use App\Services\OrderItemService;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -21,6 +19,7 @@ class ItemsRelationManager extends RelationManager
 {
     protected static string $relationship = 'items';
     protected static ?string $title = 'Поръчани артикули';
+
 
     public function form(Schema $schema): Schema
     {
@@ -47,7 +46,8 @@ class ItemsRelationManager extends RelationManager
             ->columns([
                 TextColumn::make('product_name')
                     ->label('Продукт')
-                    ->searchable(),
+                    ->searchable()
+                    ->sortable(),
 
                 TextColumn::make('price')
                     ->label('Цена')
@@ -75,16 +75,42 @@ class ItemsRelationManager extends RelationManager
                 //
             ])
             ->headerActions([
-                CreateAction::make(),
+                CreateAction::make()
+                    ->using(function (array $data) {
+                        return app(OrderItemService::class)->create([
+                            'order_id' => $this->ownerRecord->id,
+                            'product_id' => $data['product_id'],
+                            'quantity' => $data['quantity'],
+                        ]);
+                    })
+                    ->after(function ($livewire) {
+                        $livewire->dispatch('orderUpdated');
+                    }),
             ])
             ->recordActions([
-                EditAction::make(),
-                DeleteAction::make(),
+                EditAction::make()
+                    ->using(function (OrderItem $record, array $data) {
+                        return app(OrderItemService::class)->update($record, [
+                            'quantity' => $data['quantity'],
+                        ]);
+                    })
+                    ->after(fn ($livewire) => $livewire->dispatch('orderUpdated')),
+                DeleteAction::make()
+                    ->action(function (OrderItem $record) {
+                        app(OrderItemService::class)->delete($record);
+                    })
+                    ->after(fn ($livewire) => $livewire->dispatch('orderUpdated')),
             ])
             ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
+                DeleteBulkAction::make()
+                    ->action(function ($records) {
+                        $service = app(OrderItemService::class);
+
+                        foreach ($records as $record) {
+                            $service->delete($record);
+                        }
+                    })
+                    ->after(fn ($livewire) => $livewire->dispatch('orderUpdated')),
             ]);
     }
 }

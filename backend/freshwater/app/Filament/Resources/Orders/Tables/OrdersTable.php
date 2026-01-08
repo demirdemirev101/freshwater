@@ -8,6 +8,9 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Filament\Actions\Action;
+use App\Models\Order;
+use App\Services\OrderService;
 
 class OrdersTable
 {
@@ -43,7 +46,7 @@ class OrdersTable
                     ->label('Обща сума')
                     ->money('BGN', 0.00)
                     ->sortable(),
-                 TextColumn::make('payment_status')
+                TextColumn::make('payment_status')
                     ->label('Статус на плащане')
                     ->badge()
                     ->color(fn ($state) => match ($state) {

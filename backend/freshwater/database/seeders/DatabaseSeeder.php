@@ -22,6 +22,13 @@ class DatabaseSeeder extends Seeder
             'password' => Hash::make('password'),
         ]);
 
+        User::create([
+            'name' => 'Miglen Demirev',
+            'email' => 'miglen@abv.bg',
+            'phone' => '0888123456',
+            'password' => Hash::make('password'),
+        ]);
+
         $this->call([
             CategorySeeder::class,
         ]);

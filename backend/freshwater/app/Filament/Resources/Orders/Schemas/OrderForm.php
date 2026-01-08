@@ -9,6 +9,7 @@ use Filament\Schemas\Schema;
 use App\enums\PaymentMethod;
 use App\enums\PaymentStatus;
 use App\enums\OrderStatus;
+use App\Models\User;
 
 class OrderForm
 {
@@ -19,17 +20,33 @@ class OrderForm
                 Select::make('user_id')
                     ->relationship('user', 'name')
                     ->label('Потребител')
-                    ->nullable(),
-                TextInput::make('customer_name')->required(),
+                    ->nullable()
+                    ->reactive()
+                    ->afterStateUpdated(function ($state, callable $set) {
+                        if (! $state) {
+                            return;
+                        }
+
+                        $user = User::find($state);
+
+                        if (! $user) {
+                            return;
+                        }
+
+                        $set('customer_name', $user->name);
+                        $set('customer_email', $user->email);
+                        $set('customer_phone', $user->phone);
+                    }),
+
+                TextInput::make('customer_name')
+                    ->disabled(fn ($get) => (bool) $get('user_id')),
 
                 TextInput::make('customer_email')
-                    ->label('Имейл')
-                    ->email()
-                    ->required(),
+                    ->disabled(fn ($get) => (bool) $get('user_id')),
 
                 TextInput::make('customer_phone')
-                    ->label('Телефонен номер')
-                    ->tel(),
+                    ->tel()
+                    ->disabled(fn ($get) => (bool) $get('user_id')),
 
                 TextInput::make('shipping_address')
                     ->label('Адрес за доставка')
@@ -58,7 +75,7 @@ class OrderForm
                 TextInput::make('subtotal')
                     ->label('Междинна сума')
                     ->numeric()
-                    ->prefix('BGN')
+                    ->prefix('лв. ')
                     ->disabled()
                     ->dehydrated(false),
 
@@ -66,13 +83,12 @@ class OrderForm
                     ->label('Цена за доставка')
                     ->numeric()
                     ->disabled()
-                    ->dehydrated(false)
-                    ->prefix('BGN'),
+                    ->dehydrated(false),
 
                 TextInput::make('total')
                     ->label('Обща сума')
                     ->numeric()
-                    ->prefix('BGN')
+                    ->prefix('лв. ')
                     ->disabled()
                     ->dehydrated(false),
 
@@ -101,8 +117,7 @@ class OrderForm
                     ->preload(),
 
                 Textarea::make('notes')
-                    ->label('Бележки')
-                    ->columnSpanFull(),
+                    ->label('Бележки'),
             ]);
     }
 }
