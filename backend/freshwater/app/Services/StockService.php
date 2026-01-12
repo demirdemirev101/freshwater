@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\CheckoutException;
 use App\Models\Product;
 use RuntimeException;
 
@@ -21,7 +22,7 @@ class StockService
 
         if($affected===0)
         {
-            throw new RuntimeException("Недостатъчна наличност за продукт: {$product->name}");
+            throw new CheckoutException("Недостатъчна наличност за продукт: {$product->name}", 409);
         }
     }
 

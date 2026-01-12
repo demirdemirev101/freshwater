@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Exceptions\CheckoutException;
 use App\Http\Controllers\Controller;
 use App\Services\CartService;
 use App\Services\OrderService;
@@ -24,6 +25,10 @@ class CheckoutController extends Controller
             'customer_name' => 'required|string',
             'customer_phone' => 'nullable|string',
         ]);
+
+        if ($cartService->items()->isEmpty()) {
+            throw new CheckoutException('Количката е празна', 422);
+        }
 
         return DB::transaction(function() use($request, $cartService, $orderService, $stockService){
             $order = $orderService->create([
@@ -48,8 +53,8 @@ class CheckoutController extends Controller
             $cartService->clear();
 
             return response()->json([
+                'success' => true,
                 'order_id' =>$order->id,
-                'status' => 'created',
             ]);
         });
     }
