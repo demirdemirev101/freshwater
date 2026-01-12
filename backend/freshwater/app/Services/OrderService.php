@@ -3,7 +3,9 @@
 namespace App\Services;
 
 use App\Enums\OrderStatus;
+use App\Events\OrderCreated;
 use App\Models\Order;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class OrderService
@@ -44,14 +46,48 @@ class OrderService
         $order->refresh();
     }
 
-    public function create(array $attributes = []): Order
+    public function create(array $data = []): Order
     {
-        return DB::transaction(function () use ($attributes)
+        return DB::transaction(function () use ($data)
         {
-            return Order::create([
-                'user_id' => $attributes['user_id'] ?? null,
-                'status' => $attributes['status'] ?? 'pending', 
+            $order = Order::create([
+                'user_id'           => Auth::id(),
+                'customer_name'     => $data['customer_name'],
+                'customer_email'    => $data['customer_email'],
+                'customer_phone'    => $data['customer_phone'] ?? null,
+
+                'shipping_address'  => $data['shipping_address'],
+                'shipping_city'     => $data['shipping_city'],
+                'shipping_postcode' => $data['shipping_postcode'] ?? null,
+
+                'status'            => 'pending',
+
+                // 🔥 ВАЖНО
+                'subtotal'          => $data['subtotal'],
+                'shipping_price'    => $data['shipping_price'] ?? 0,
+                'total'             => $data['total'],
+
+                'payment_method'    => $data['payment_method'],
+                'payment_status'    => 'unpaid',
+
+                'notes'             => $data['notes'] ?? null,
             ]);
+
+            foreach ($data['items'] as $item) {
+                $order->items()->create([
+                    'product_id'   => $item['product_id'],
+                    'product_name' => $item['name'],
+                    'price'        => $item['price'],
+                    'quantity'     => $item['quantity'],
+                    'total'  => $item['price'] * $item['quantity'],
+                ]);
+            }
+
+            DB::afterCommit(function () use ($order) {
+                event(new OrderCreated($order));
+            });
+
+            return $order;
         });
     }
 
