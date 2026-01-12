@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Services\CartService;
 use App\Services\OrderService;
+use App\Services\StockService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -14,7 +15,8 @@ class CheckoutController extends Controller
     public function store(
         Request $request,
         CartService $cartService,
-        OrderService $orderService
+        OrderService $orderService,
+        StockService $stockService,
     )
     {
         $request->validate([
@@ -23,12 +25,15 @@ class CheckoutController extends Controller
             'customer_phone' => 'nullable|string',
         ]);
 
-        return DB::transaction(function() use($request, $cartService, $orderService){
+        return DB::transaction(function() use($request, $cartService, $orderService, $stockService){
             $order = $orderService->create([
                 'user_id' => Auth::id(),
             ]);
 
             foreach($cartService->items() as $item){
+
+                $stockService->reserve($item->prouct, $item->quantity);
+
                 $order->items()->create([
                     'product_id' => $item->product_id,
                     'quantity' => $item->quantity,

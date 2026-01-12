@@ -96,4 +96,61 @@ class CartService
     {
         return $this->cart;
     }
+
+    public function mergeGuestCartToUser(): void
+    {
+        if(!Auth::check()){
+            return;
+        }
+
+        $sessionId = Session::getId();
+
+        $guestCart = Cart::where('session_id', $sessionId)->first();
+        $userCart = Cart::where('user_id', Auth::id())->first();
+
+
+        if(!$guestCart){
+            return;
+        }
+
+        DB::transaction(function() use ($guestCart, $userCart){
+            if(!$userCart){
+                $guestCart->update([
+                    'user_id' => Auth::id(),
+                    'session_id' => null,
+                ]);
+
+                return;
+            }
+
+            foreach($guestCart->items as $guestItem){
+
+                $userItem = $userCart->items()
+                    ->where('product_id', $guestItem->product_id)
+                    ->first();
+
+                if($userItem){
+                    $userItem->quantity+=$guestItem->quantity;
+                    $userItem->total = $userItem->quantity * $userItem->price;
+                    $userItem->save();
+                } else {
+                    $userCart->items()->create([
+                        'product_id' => $guestItem->product_id,
+                        'quantity' => $guestItem->quantity,
+                        'price' => $guestItem -> price,
+                        'total' => $guestItem->total,
+                    ]);
+                }
+            }
+            
+            $guestCart->items()->delete();
+            $guestCart->delete();
+
+        });
+    }
+
+    public function hasGuestCart(): bool
+    {
+        return Cart::where('session_id', session()->getId())->exists();
+    }
 }
