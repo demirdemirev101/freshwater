@@ -13,6 +13,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Auth;
 
 class SettingResource extends Resource
 {
@@ -22,15 +23,38 @@ class SettingResource extends Resource
 
     protected static ?string $navigationLabel = 'Настройки';
 
+    public static function canAccess(): bool
+    {
+        return Auth::check() && Auth::user()->can('manage settings');
+    }
+
+    public static function canViewAny(): bool
+    {
+        return Auth::check() && Auth::user()->can('manage settings');
+    }
+
     public static function canCreate(): bool
     {
-        return Setting::count()===0;
+        return Auth::check()
+            && Auth::user()->can('manage settings')
+            && Setting::count() === 0;
+    }
+
+    public static function canEdit($record): bool
+    {
+        return Auth::check() && Auth::user()->can('manage settings');
+    }
+
+    public static function canDelete($record): bool
+    {
+        return Auth::check() && Auth::user()->can('manage settings');
     }
 
     public static function canDeleteAny(): bool
     {
-        return false;
+        return Auth::check() && Auth::user()->can('manage settings');
     }
+
 
     public static function form(Schema $schema): Schema
     {

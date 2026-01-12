@@ -9,37 +9,87 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
-use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Filament\Forms\Components\Select;
+use Illuminate\Support\Facades\Auth;
 
 class UserResource extends Resource
 {
     protected static ?string $model = User::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::Phone;
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-users';
 
     protected static ?string $navigationLabel = 'Потребители';
+
+    /* ===============================
+     | Access
+     =============================== */
+    public static function canAccess(): bool
+    {
+        return Auth::check() && Auth::user()->can('view users');
+    }
+
+    public static function canViewAny(): bool
+    {
+        return Auth::check() && Auth::user()->can('view users');
+    }
+
+    /* ===============================
+     | CRUD
+     =============================== */
+    public static function canCreate(): bool
+    {
+        return Auth::user()?->can('create users');
+    }
+
+    public static function canEdit($record): bool
+    {
+        // ❌ admin не може да редактира superadmin
+        if ($record->hasRole('superadmin')) {
+            return Auth::user()?->hasRole('superadmin');
+        }
+
+        return Auth::user()?->can('edit users');
+    }
+
+    public static function canDelete($record): bool
+    {
+        // ❌ никой не трие superadmin
+        if ($record->hasRole('superadmin')) {
+            return false;
+        }
+
+        return Auth::user()?->can('delete users');
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return Auth::user()?->can('delete users');
+    }
 
     public static function form(Schema $schema): Schema
     {
         return $schema
             ->components([
                 TextInput::make('name')
+                    ->label('Име')
                     ->required(),
                 TextInput::make('email')
-                    ->label('Email address')
+                    ->label('Email адрес')
                     ->email()
                     ->required(),
-                DateTimePicker::make('email_verified_at'),
-                TextInput::make('password')
-                    ->password(),
                 TextInput::make('phone')
+                    ->label('Телефонен номер')
                     ->tel(),
+                Select::make('roles')
+                    ->label('Роля')
+                    ->multiple()
+                    ->relationship('roles', 'name')
+                    ->preload(),
             ]);
     }
 
@@ -48,34 +98,35 @@ class UserResource extends Resource
         return $table
             ->columns([
                 TextColumn::make('name')
+                    ->label('Име')
                     ->searchable(),
                 TextColumn::make('email')
-                    ->label('Email address')
-                    ->searchable(),
-                TextColumn::make('email_verified_at')
-                    ->dateTime()
-                    ->sortable(),
-                TextColumn::make('phone')
-                    ->searchable(),
-                TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->label('Email адрес'),
+                TextColumn::make('roles')
+                    ->label('Роля')
+                    ->badge()
+                    ->getStateUsing(fn ($record) => $record->roles->first()?->name)
+                    ->color(fn ($state) => match ($state) {
+                        'customer' => 'info',
+                        'admin' => 'primary',
+                        'superadmin' => 'success',
+                        default => 'gray',
+                    }),
+
             ])
             ->filters([
                 //
             ])
             ->recordActions([
-                EditAction::make(),
-                DeleteAction::make(),
+                EditAction::make()
+                    ->authorize(fn () => Auth::user()->can('edit users')),
+                DeleteAction::make()
+                    ->authorize(fn () => Auth::user()->can('delete users')),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()
+                        ->authorize(fn () => Auth::user()->can('delete users')),
                 ]),
             ]);
     }

@@ -14,6 +14,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use App\Filament\Resources\Orders\RelationManagers\ItemsRelationManager;
+use Illuminate\Support\Facades\Auth;
 
 class OrderResource extends Resource
 {
@@ -22,6 +23,43 @@ class OrderResource extends Resource
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     protected static ?string $navigationLabel = 'Поръчки';
+
+    /* ===============================
+     | Access
+     =============================== */
+    public static function canAccess(): bool
+    {
+        return Auth::check() && Auth::user()->can('view orders');
+    }
+
+    public static function canViewAny(): bool
+    {
+        return Auth::check() && Auth::user()->can('view orders');
+    }
+
+    /* ===============================
+     | CRUD
+     =============================== */
+    public static function canCreate(): bool
+    {
+        return false; // ❌ никога от админ
+    }
+
+    public static function canEdit($record): bool
+    {
+        return Auth::user()?->can('edit orders');
+    }
+
+    public static function canDelete($record): bool
+    {
+        return false; // ❌ никога
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return false;
+    }
+    //======================================
 
     public static function form(Schema $schema): Schema
     {
@@ -44,7 +82,6 @@ class OrderResource extends Resource
     {
         return [
             'index' => ListOrders::route('/'),
-            'create' => CreateOrder::route('/create'),
             'edit' => EditOrder::route('/{record}/edit'),
         ];
     }

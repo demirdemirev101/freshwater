@@ -9,6 +9,7 @@ use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Auth;
 
 class CategoriesTable
 {
@@ -31,13 +32,16 @@ class CategoriesTable
                 //
             ])
             ->recordActions([
-                ViewAction::make(),
-                EditAction::make(),
-                DeleteAction::make(),
+                EditAction::make()
+                    ->label('Редактирай')
+                    ->authorize(fn () => Auth::user()->can('edit categories')),
+                DeleteAction::make()
+                    ->authorize(fn () => Auth::user()->can('delete categories')),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()
+                        ->authorize(fn () => Auth::user()->can('delete categories')),
                 ]),
             ]);
     }

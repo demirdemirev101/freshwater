@@ -19,6 +19,8 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
 
 class ImagesRelationManager extends RelationManager
 {
@@ -30,7 +32,26 @@ class ImagesRelationManager extends RelationManager
     {
         $this->ownerRecord->refresh();
     }
-    
+
+    public static function canViewRecord($ownerRecord): bool
+    {
+        return Auth::user()?->can('view product images');
+    }
+    protected function canEdit($record): bool
+    {
+        return Auth::user()?->can('edit product images');
+    }
+
+    protected function canCreate(): bool
+    {
+        return Auth::user()?->can('create product images');
+    }
+
+    protected function canDelete($record): bool
+    {
+        return Auth::user()?->can('delete product images');
+    }
+
     public function form(Schema $schema): Schema
     {
         return $schema
@@ -68,15 +89,23 @@ class ImagesRelationManager extends RelationManager
                 //
             ])
             ->headerActions([
-                CreateAction::make(),
+                CreateAction::make()
+                    ->label('Качи изображение')
+                    ->visible(fn () => Auth::user()->can('create product images')),
             ])
             ->recordActions([
-                EditAction::make(),
-                DeleteAction::make(),
+                EditAction::make()
+                    ->label('Редактирай')
+                    ->authorize(fn () => Auth::user()->can('edit product images')),
+                DeleteAction::make()
+                    ->label('Изтрий')
+                    ->authorize(fn () => Auth::user()->can('delete product images')),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()
+                        ->label('Изтрий избраните')
+                        ->authorize(fn () => Auth::user()?->can('delete product images')),
                 ]),
             ]);
     }

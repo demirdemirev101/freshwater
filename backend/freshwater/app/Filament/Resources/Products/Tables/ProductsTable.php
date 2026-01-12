@@ -2,15 +2,15 @@
 
 namespace App\Filament\Resources\Products\Tables;
 
-use Dom\Text;
+use Filament\Actions\CreateAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Auth;
 
 class ProductsTable
 {
@@ -49,13 +49,17 @@ class ProductsTable
                 //
             ])
             ->recordActions([
-                ViewAction::make(),
-                EditAction::make(),
-                DeleteAction::make(),
+                ViewAction::make()
+                    ->visible(fn () => Auth::user()->can('view products')),
+                EditAction::make()
+                    ->visible(fn () => Auth::user()->can('edit products')),
+                DeleteAction::make()
+                    ->visible(fn () => Auth::user()->can('delete products')),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()
+                        ->authorize(fn () => Auth::user()->can('delete products')),
                 ]),
             ]);
     }

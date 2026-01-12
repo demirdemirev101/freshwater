@@ -11,6 +11,7 @@ use Filament\Tables\Table;
 use Filament\Actions\Action;
 use App\Models\Order;
 use App\Services\OrderService;
+use Illuminate\Support\Facades\Auth;
 
 class OrdersTable
 {
@@ -79,7 +80,8 @@ class OrdersTable
                 //
             ])
             ->recordActions([
-                EditAction::make(),
+                EditAction::make()
+                    ->authorize(fn () => Auth::user()?->can('edit orders')),
                 DeleteAction::make(),
             ])
             ->toolbarActions([
