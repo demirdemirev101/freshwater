@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\OrderStatus;
 use App\Events\OrderCreated;
 use App\Models\Order;
+use App\Models\Product;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -74,9 +75,12 @@ class OrderService
             ]);
 
             foreach ($data['items'] as $item) {
+
+                $product = Product::findOrFail($item['product_id']);
+                
                 $order->items()->create([
-                    'product_id'   => $item['product_id'],
-                    'product_name' => $item['name'],
+                    'product_id'   => $product->id,
+                    'product_name' => $product->name,
                     'price'        => $item['price'],
                     'quantity'     => $item['quantity'],
                     'total'  => $item['price'] * $item['quantity'],

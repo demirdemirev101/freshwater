@@ -2,14 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreOrderRequest;
 use App\Services\OrderService;
-use Illuminate\Http\Request;
 
 class OrderController extends Controller
 {
-    public function store(Request $request, OrderService $orderService)
+    public function store(StoreOrderRequest $request, OrderService $orderService)
     {
-        $order = $orderService->create($request->all());
+        $order = $orderService->create($request->validated());
 
         return response()->json([
             'success' => true,
