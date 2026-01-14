@@ -4,6 +4,7 @@ namespace App\Listeners;
 
 use App\Events\OrderCreated;
 use App\Mail\OrderConfirmationMail;
+use App\Models\Order;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Mail;
 
@@ -14,7 +15,9 @@ class SendOrderConfirmationEmail implements ShouldQueue
      */
     public function handle(OrderCreated $event): void
     {
-        Mail::to($event->order->customer_email)
-            ->send(new OrderConfirmationMail($event->order));
+        $order = Order::with('items')->findOrFail($event->orderId);
+
+        Mail::to($order->customer_email)
+            ->send(new OrderConfirmationMail($order->id));
     }
 }

@@ -15,8 +15,6 @@ class OrderPricingService
     {
         $settings = Setting::current();
 
-        $shippingPrice = 0;
-
         if(! $settings->delivery_enabled){
             $order->shipping_price = 0;
             return;
@@ -42,6 +40,6 @@ class OrderPricingService
         $this->applyShipping($order);
 
         // Calculate total
-        $order->total = $order->subtotal + ($order->shipping_price ?? 0);
+        $order->total = ($order->subtotal??0) + ($order->shipping_price ?? 0);
     }
 }

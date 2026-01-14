@@ -16,7 +16,7 @@
         <tr>
             <td>{{ $item->product_name }}</td>
             <td align="center">x{{ $item->quantity }}</td>
-            <td align="right">{{ number_format($item->total_price, 2) }} лв.</td>
+            <td align="right">{{ number_format($item->total, 2) }} лв.</td>
         </tr>
     @endforeach
 </table>
@@ -24,7 +24,7 @@
 <hr>
 
 <p><strong>Доставка:</strong> {{ number_format($order->shipping_price, 2) }} лв.</p>
-<p><strong>Общо:</strong> {{ number_format($order->total_price, 2) }} лв.</p>
+<p><strong>Общо:</strong> {{ number_format($order->total, 2) }} лв.</p>
 
 <hr>
 

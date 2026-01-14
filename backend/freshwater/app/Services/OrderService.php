@@ -11,20 +11,21 @@ use Illuminate\Support\Facades\DB;
 
 class OrderService
 {
-    public function __construct(protected OrderPricingService $orderPricingService) {}
+    public function __construct(
+            protected OrderPricingService $orderPricingService,
+            private PaymentService $paymentService
+        ) 
+        {}
 
     public function setCustomerData(Order $order, array $data = []): void
     {
         if($order->customer_email){
             return;
         }
-        if($order->user_id && $order->relationLoaded('user') || $order->user){
-            $user = $order->user;
-
-            $order->customer_email = $user->email;
-            $order->customer_name  ??= $user->name;
-            $order->customer_phone ??= $user->phone;
-
+        if($order->user){
+            $order->customer_email ??= $order->user->email;
+            $order->customer_name  ??= $order->user->name;
+            $order->customer_phone ??= $order->user->phone;
         } else{
             $order->customer_email ??= $data['customer_email']??null;
             $order->customer_name ??= $data['customer_name']??null;
@@ -64,12 +65,12 @@ class OrderService
                 'status'            => 'pending',
 
                 // 🔥 ВАЖНО
-                'subtotal'          => $data['subtotal'],
-                'shipping_price'    => $data['shipping_price'] ?? 0,
-                'total'             => $data['total'],
+                'subtotal'          => 0,
+                'shipping_price'    => 0,
+                'total'             => 0,
 
                 'payment_method'    => $data['payment_method'],
-                'payment_status'    => 'unpaid',
+                'payment_status'    => 'pending',
 
                 'notes'             => $data['notes'] ?? null,
             ]);
@@ -81,14 +82,19 @@ class OrderService
                 $order->items()->create([
                     'product_id'   => $product->id,
                     'product_name' => $product->name,
-                    'price'        => $item['price'],
+                    'price'        => $product->price,
                     'quantity'     => $item['quantity'],
-                    'total'  => $item['price'] * $item['quantity'],
+                    'total'  => $product->price * $item['quantity'],
                 ]);
             }
 
+            $this->recalculateTotal($order);
+
+            $this->paymentService->handle($order);
+
             DB::afterCommit(function () use ($order) {
-                event(new OrderCreated($order));
+                
+                event(new OrderCreated($order->id));
             });
 
             return $order;
@@ -98,8 +104,9 @@ class OrderService
     public function cancel(Order $order): void
     {
         DB::transaction(function () use ($order){
-            $order->status='cancelled';
-            $order->saveQuietly();
+            $order->updateQuietly([
+                'status' => 'cancelled',
+            ]);
         });
     }
 

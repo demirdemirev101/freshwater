@@ -14,15 +14,20 @@ class AdminOrderNotificationMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    /**
-     * Create a new message instance.
-     */
-    public function __construct(public Order $order) {}
+    public Order $order;
+
+    public function __construct(public int $orderId) 
+    {
+        $this->order = Order::with('items')->findOrFail($orderId);
+    }
 
     public function build()
     {
         return $this
-            ->subject('🛒 Нова поръчка #' . $this->order->id)
-            ->view('emails.admin-order-notification');
+            ->subject('🛒 Нова поръчка #' . $this->orderId)
+            ->view('emails.admin-order-notification')
+            ->with([
+                'order' => $this->order,
+            ]);
     }
 }

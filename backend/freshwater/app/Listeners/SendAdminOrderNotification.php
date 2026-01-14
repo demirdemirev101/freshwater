@@ -4,8 +4,9 @@ namespace App\Listeners;
 
 use App\Events\OrderCreated;
 use App\Mail\AdminOrderNotificationMail;
+use App\Models\Order;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
 class SendAdminOrderNotification implements ShouldQueue
@@ -15,7 +16,9 @@ class SendAdminOrderNotification implements ShouldQueue
      */
     public function handle(OrderCreated $event): void
     {
+        $order = Order::with('items')->findOrFail($event->orderId);
+        
         Mail::to('admin@freshwater.bg')
-            ->send(new AdminOrderNotificationMail($event->order));
+            ->send(new AdminOrderNotificationMail($order->id));
     }
 }
