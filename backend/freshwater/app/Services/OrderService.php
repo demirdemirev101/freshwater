@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use App\Enums\OrderStatus;
-use App\Events\OrderCreated;
+use App\Events\OrderPlaced;
+use App\Jobs\CalculateBankTransferShippingJob;
 use App\Models\Order;
 use App\Models\Product;
 use Illuminate\Support\Facades\Auth;
@@ -13,45 +13,23 @@ class OrderService
 {
     public function __construct(
             protected OrderPricingService $orderPricingService,
-            private PaymentService $paymentService
+            private PaymentService $paymentService,
+            private CartService $cartService
         ) 
         {}
 
-    public function setCustomerData(Order $order, array $data = []): void
-    {
-        if($order->customer_email){
-            return;
-        }
-        if($order->user){
-            $order->customer_email ??= $order->user->email;
-            $order->customer_name  ??= $order->user->name;
-            $order->customer_phone ??= $order->user->phone;
-        } else{
-            $order->customer_email ??= $data['customer_email']??null;
-            $order->customer_name ??= $data['customer_name']??null;
-            $order->customer_phone ??= $data['customer_phone']??null;
-        }
-
-        $order->saveQuietly();
-    }
-
     public function recalculateTotal(Order $order): void
     {
-        DB::transaction(function () use ($order) {
-            $order->subtotal = $order->items()->sum('total');
-
-            $this->orderPricingService->applyTotals($order);
-
-            $order->saveQuietly();
-        });
-
+        $order->subtotal = $order->items()->sum('total');
+        $this->orderPricingService->applyTotals($order);
+        $order->saveQuietly();
         $order->refresh();
     }
 
     public function create(array $data = []): Order
     {
-        return DB::transaction(function () use ($data)
-        {
+        return DB::transaction(function () use ($data) {
+
             $order = Order::create([
                 'user_id'           => Auth::id(),
                 'customer_name'     => $data['customer_name'],
@@ -61,10 +39,10 @@ class OrderService
                 'shipping_address'  => $data['shipping_address'],
                 'shipping_city'     => $data['shipping_city'],
                 'shipping_postcode' => $data['shipping_postcode'] ?? null,
+                'holiday_delivery_day' => $data['holiday_delivery_day'] ?? null,
 
                 'status'            => 'pending',
 
-                // 🔥 ВАЖНО
                 'subtotal'          => 0,
                 'shipping_price'    => 0,
                 'total'             => 0,
@@ -75,31 +53,38 @@ class OrderService
                 'notes'             => $data['notes'] ?? null,
             ]);
 
-            foreach ($data['items'] as $item) {
+            $cartItems = $this->cartService->items();
 
-                $product = Product::findOrFail($item['product_id']);
-                
+            if ($cartItems->isEmpty()) {
+                throw new \Exception('Количката е празна');
+            }
+
+            foreach ($cartItems as $item) {
                 $order->items()->create([
-                    'product_id'   => $product->id,
-                    'product_name' => $product->name,
-                    'price'        => $product->price,
-                    'quantity'     => $item['quantity'],
-                    'total'  => $product->price * $item['quantity'],
+                    'product_id'   => $item->product_id,
+                    'product_name' => $item->product->name,
+                    'price'        => $item->price,
+                    'quantity'     => $item->quantity,
+                    'total'        => $item->total,
                 ]);
             }
 
             $this->recalculateTotal($order);
 
+            // ⚠️ PaymentService вътре в транзакцията (OK за сега)
             $this->paymentService->handle($order);
 
-            DB::afterCommit(function () use ($order) {
-                
-                event(new OrderCreated($order->id));
-            });
+            // ✅ ЕДИН event, ясно и чисто
+            OrderPlaced::dispatch($order->id);
+
+            if ($order->payment_method === 'bank_transfer') {
+                dispatch(new CalculateBankTransferShippingJob($order->id));
+            }
 
             return $order;
         });
     }
+
 
     public function cancel(Order $order): void
     {

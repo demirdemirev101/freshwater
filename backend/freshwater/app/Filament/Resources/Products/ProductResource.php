@@ -24,6 +24,8 @@ class ProductResource extends Resource
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     protected static ?string $navigationLabel = 'Продукти';
+    protected static ?string $modelLabel = 'продукт';
+    protected static ?string $pluralModelLabel = 'Продукти';
 
     /* ===============================
      | Resource visibility (sidebar)

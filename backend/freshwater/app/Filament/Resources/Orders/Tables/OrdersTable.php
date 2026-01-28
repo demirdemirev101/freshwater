@@ -2,15 +2,14 @@
 
 namespace App\Filament\Resources\Orders\Tables;
 
+use Doctrine\DBAL\Schema\View;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-use Filament\Actions\Action;
-use App\Models\Order;
-use App\Services\OrderService;
 use Illuminate\Support\Facades\Auth;
 
 class OrdersTable
@@ -82,6 +81,8 @@ class OrdersTable
             ->recordActions([
                 EditAction::make()
                     ->authorize(fn () => Auth::user()?->can('edit orders')),
+                ViewAction::make()
+                    ->authorize(fn () => Auth::user()?->can('view orders')),
                 DeleteAction::make(),
             ])
             ->toolbarActions([

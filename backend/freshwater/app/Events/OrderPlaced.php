@@ -2,17 +2,17 @@
 
 namespace App\Events;
 
-use App\Models\Order;
 use Illuminate\Broadcasting\PrivateChannel;
+use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class OrderCreated
+class OrderPlaced
 {
     use Dispatchable, SerializesModels;
 
-    /**
-     * Create a new event instance.
-     */
-    public function __construct(public int $orderId) {}
+
+    public function __construct(public int $orderId)
+    {
+    }
 }

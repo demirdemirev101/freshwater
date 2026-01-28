@@ -22,6 +22,8 @@ class SettingResource extends Resource
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     protected static ?string $navigationLabel = 'Настройки';
+     protected static ?string $modelLabel = 'настройки';
+    protected static ?string $pluralModelLabel = 'Настройки';
 
     public static function canAccess(): bool
     {

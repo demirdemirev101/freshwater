@@ -2,16 +2,13 @@
 
 namespace App\Events;
 
-use App\Models\Order;
+use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class OrderReadyForShipment
+class OrderReadyForShipment implements ShouldDispatchAfterCommit
 {
     use Dispatchable, SerializesModels;
 
-    /**
-     * Create a new event instance.
-     */
-    public function __construct(public Order $order) {}
+    public function __construct(public int $orderId) {}
 }

@@ -2,6 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Models\Product;
+use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -148,5 +150,16 @@ class DatabaseSeeder extends Seeder
         $this->call([
             CategorySeeder::class,
         ]);
+
+        Product::create([
+            'name' => 'Система за обратна осмоза INFINITY',
+            'price' => 13.59,
+        ]);
+        Setting::create([
+            'delivery_price' => 7.67,
+            'delivery_enabled' => true,
+            'free_delivery_over' => 100,
+        ]);
+        
     }
 }

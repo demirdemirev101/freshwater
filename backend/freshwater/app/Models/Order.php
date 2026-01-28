@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Facades\Auth;
 
 class Order extends Model
 {
@@ -21,6 +23,7 @@ class Order extends Model
         'shipping_city',
         'shipping_postcode',
         'shipping_country',
+        'holiday_delivery_day',
         'status',
         'subtotal',
         'shipping_price',
@@ -28,6 +31,10 @@ class Order extends Model
         'payment_method',
         'payment_status',
         'notes'
+    ];
+
+    protected $casts = [
+        'holiday_delivery_day' => 'date',
     ];
 
     public function user() : BelongsTo
@@ -45,5 +52,13 @@ class Order extends Model
                 $order->user_id = null;
             }
         });
+    }
+    public function shipment(): HasOne
+    {
+        return $this->hasOne(Shipment::class);
+    }
+    public function canEdit(): bool
+    {
+        return Auth::user()?->can('edit orders') ?? false;
     }
 }

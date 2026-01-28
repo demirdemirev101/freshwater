@@ -5,15 +5,17 @@ namespace App\Filament\Resources\Orders;
 use App\Filament\Resources\Orders\Pages\CreateOrder;
 use App\Filament\Resources\Orders\Pages\EditOrder;
 use App\Filament\Resources\Orders\Pages\ListOrders;
+use App\Filament\Resources\Orders\Pages\ViewOrder;
 use App\Filament\Resources\Orders\Schemas\OrderForm;
 use App\Filament\Resources\Orders\Tables\OrdersTable;
+use App\Filament\Resources\Orders\RelationManagers\ItemsRelationManager;
+use App\Filament\Resources\Orders\RelationManagers\ShipmentsRelationManager; // ← ДОБАВИ
 use App\Models\Order;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
-use App\Filament\Resources\Orders\RelationManagers\ItemsRelationManager;
 use Illuminate\Support\Facades\Auth;
 
 class OrderResource extends Resource
@@ -23,6 +25,7 @@ class OrderResource extends Resource
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     protected static ?string $navigationLabel = 'Поръчки';
+    protected static ?string $pluralModelLabel = 'Поръчки';
 
     /* ===============================
      | Access
@@ -42,7 +45,7 @@ class OrderResource extends Resource
      =============================== */
     public static function canCreate(): bool
     {
-        return false; // ❌ никога от админ
+        return false;
     }
 
     public static function canEdit($record): bool
@@ -52,14 +55,13 @@ class OrderResource extends Resource
 
     public static function canDelete($record): bool
     {
-        return false; // ❌ никога
+        return false;
     }
 
     public static function canDeleteAny(): bool
     {
         return false;
     }
-    //======================================
 
     public static function form(Schema $schema): Schema
     {
@@ -75,6 +77,7 @@ class OrderResource extends Resource
     {
         return [
             ItemsRelationManager::class,
+            ShipmentsRelationManager::class, // ← ДОБАВИ
         ];
     }
 
@@ -83,6 +86,7 @@ class OrderResource extends Resource
         return [
             'index' => ListOrders::route('/'),
             'edit' => EditOrder::route('/{record}/edit'),
+            'view' => ViewOrder::route('/{record}'),
         ];
     }
 }

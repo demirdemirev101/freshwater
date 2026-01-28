@@ -84,7 +84,13 @@ class CartService
 
     public function clear(): void
     {
-        $this->cart->items()->delete();
+        if (Auth::check()) {
+            Cart::where('user_id', Auth::id())
+                ->first()?->items()->delete();
+        }
+
+        Cart::where('session_id', session()->getId())
+            ->first()?->items()->delete();
     }
 
     public function subtotal(): float

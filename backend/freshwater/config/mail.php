@@ -114,5 +114,11 @@ return [
         'address' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),
         'name' => env('MAIL_FROM_NAME', 'Example'),
     ],
-
+    
+     /*
+    |--------------------------------------------------------------------------
+    | Admin notification email
+    |--------------------------------------------------------------------------
+    */
+    'admin_address' => env('MAIL_ADMIN_ADDRESS', 'admin@freshwater.bg'),
 ];

@@ -28,6 +28,18 @@
 
 <hr>
 
+@if ($order->payment_method === 'bank_transfer')
+    <h3>🏦 Плащане по банков превод</h3>
+    <p><strong>Получател:</strong> {{ config('services.bank_transfer.company_name') }}</p>
+    <p><strong>IBAN:</strong> {{ config('services.bank_transfer.iban') }}</p>
+    <p><strong>Банка:</strong> {{ config('services.bank_transfer.bank_name') }}</p>
+    <p><strong>BIC:</strong> {{ config('services.bank_transfer.bic') }}</p>
+    <p><strong>Сума:</strong> {{ number_format($order->total, 2) }} {{ config('services.bank_transfer.currency') }}</p>
+    <p><strong>Основание:</strong> Поръчка #{{ $order->id }}</p>
+    <p>След потвърждаване на плащането ще подготвим и изпратим пратката.</p>
+    <hr>
+@endif
+
 <h3>🚚 Адрес за доставка</h3>
 <p>{{ $order->shipping_address }}</p>
 

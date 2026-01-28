@@ -26,6 +26,7 @@ class StoreOrderRequest extends FormRequest
             'customer_email'   => 'required|email',
             'shipping_address' => 'required|string',
             'shipping_city'    => 'required|string',
+            'holiday_delivery_day' => 'nullable|date_format:Y-m-d',
 
             'subtotal'         => 'required|numeric|min:0',
             'shipping_price'   => 'nullable|numeric|min:0',

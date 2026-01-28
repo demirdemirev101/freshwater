@@ -21,9 +21,12 @@ class CategoryResource extends Resource
 {
     protected static ?string $model = Category::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::PresentationChartBar;
 
     protected static ?string $navigationLabel = 'Категории';
+     protected static ?string $modelLabel = 'категория';
+    protected static ?string $pluralModelLabel = 'Категории';
+
 
     /* ===============================
      | Access
