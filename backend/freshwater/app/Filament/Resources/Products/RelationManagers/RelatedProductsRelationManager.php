@@ -12,7 +12,7 @@ use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Tables\Columns\IconColumn;
-use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 
 class RelatedProductsRelationManager extends RelationManager
 {
@@ -55,17 +55,18 @@ class RelatedProductsRelationManager extends RelationManager
                 AttachAction::make()
                     ->label('Добави продукт')
                     ->recordSelectSearchColumns(['name', 'slug'])
-                    ->preloadRecordSelect()
-                    //->successRedirectUrl(fn() => url()->current())
-                    //->recordSelectOptionsQuery(fn (Builder $query) => $query->where('id', '!=', $this->getOwnerRecord()->getKey())),
+                    ->preloadRecordSelect(),
             ])
             ->recordActions([
                 DetachAction::make()
-                    ->label('Премахни'),
+                    ->label('Премахни')
+                    ->authorize(fn () => Auth::user()->can('detach related products')),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
-                    DetachBulkAction::make(),
+                    DetachBulkAction::make()
+                        ->label('Премахни избраните')
+                        ->authorize(fn () => Auth::user()->can('detach related products')),
                 ]),
             ]);
     }

@@ -15,23 +15,54 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Auth;
 
 class CategoryResource extends Resource
 {
     protected static ?string $model = Category::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-rectangle-stack';
 
     protected static ?string $navigationLabel = 'Категории';
+     protected static ?string $modelLabel = 'категория';
+    protected static ?string $pluralModelLabel = 'Категории';
+
+
+    /* ===============================
+     | Access
+     =============================== */
+    public static function canAccess(): bool
+    {
+        return Auth::check() && Auth::user()->can('view categories');
+    }
+
+    public static function canViewAny(): bool
+    {
+        return Auth::check() && Auth::user()->can('view categories');
+    }
+
+    /* ===============================
+     | CRUD
+     =============================== */
+    public static function canCreate(): bool
+    {
+        return Auth::user()->can('create categories');
+    }
+
+    public static function canEdit($record): bool
+    {
+        return Auth::user()->can('edit categories');
+    }
+
+    public static function canDelete($record): bool
+    {
+        return Auth::user()->can('delete categories');
+    }
+    //==============================
 
     public static function form(Schema $schema): Schema
     {
         return CategoryForm::configure($schema);
-    }
-
-    public static function infolist(Schema $schema): Schema
-    {
-        return CategoryInfolist::configure($schema);
     }
 
     public static function table(Table $table): Table
@@ -51,7 +82,6 @@ class CategoryResource extends Resource
         return [
             'index' => ListCategories::route('/'),
             'create' => CreateCategory::route('/create'),
-            'view' => ViewCategory::route('/{record}'),
             'edit' => EditCategory::route('/{record}/edit'),
         ];
     }

@@ -36,21 +36,43 @@ class ProductForm
                 RichEditor::make('description')
                     ->label('Описание')
                     ->columnSpanFull(),
-                Section::make('Цена и наличност')->schema([
-                    Grid::make(3)->schema([
-                        TextInput::make('price')
-                            ->label('Цена')
-                            ->numeric()
-                            ->prefix('BGN'),
-                        TextInput::make('sale_price')
-                            ->label('Цена с отстъпка')
-                            ->numeric()
-                            ->prefix('BGN'),
+                Section::make('Цени и наличност')
+                    ->schema([
+
+                        Grid::make(2)->schema([
+                            TextInput::make('price')
+                                ->label('Цена')
+                                ->numeric()
+                                ->required()
+                                ->prefix('€ '),
+
+                            TextInput::make('sale_price')
+                                ->label('Цена с отстъпка')
+                                ->numeric()
+                                ->prefix('€ '),
+                        ]),
+
                         Toggle::make('stock')
-                            ->label('Наличност'),
-                        ])
-                ])
-                    ->columnSpan('2'),
+                            ->label('Следи наличност')
+                            ->reactive()
+                            ->afterStateUpdated(function ($state, callable $set) {
+                                if ($state === false) {
+                                    // 🔥 когато не следим наличност
+                                    $set('quantity', null);
+                                } else {
+                                    // 🔥 когато включим следене
+                                    $set('quantity', 0);
+                                }
+                            }),
+
+                        TextInput::make('quantity')
+                            ->label('Количество')
+                            ->numeric()
+                            ->minValue(0)
+                            ->nullable()
+                            ->visible(fn ($get) => $get('stock') === true),
+                    ])
+                    ->columnSpanFull(),
                 RichEditor::make('extra_information')
                     ->label('Допълнителна информация')
                     ->columnSpanFull(),
