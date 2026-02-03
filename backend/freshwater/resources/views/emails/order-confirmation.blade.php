@@ -11,20 +11,17 @@
 
 <h3>📦 Поръчани продукти</h3>
 
-<table width="100%" cellpadding="5">
+<ul>
     @foreach($order->items as $item)
-        <tr>
-            <td>{{ $item->product_name }}</td>
-            <td align="center">x{{ $item->quantity }}</td>
-            <td align="right">{{ number_format($item->total, 2) }} лв.</td>
-        </tr>
+        <li>{{ $item->product_name }} x {{ $item->quantity }}</li>
+        <li>{{ number_format($item->total, 2) }} € / {{ number_format($item->total*1.9558, 2) }} лв.</li>
     @endforeach
-</table>
+</ul>
 
 <hr>
 
-<p><strong>Доставка:</strong> {{ number_format($order->shipping_price, 2) }} лв.</p>
-<p><strong>Общо:</strong> {{ number_format($order->total, 2) }} лв.</p>
+<p><strong>Доставка:</strong> {{ number_format($order->shipping_price, 2) }} € / {{ number_format($order->shipping_price*1.9558, 2) }} лв.</p>
+<p><strong>Общо:</strong> {{ number_format($order->total, 2) }} € / {{ number_format($order->total*1.9558, 2) }} лв.</p>
 
 <hr>
 
@@ -34,7 +31,7 @@
     <p><strong>IBAN:</strong> {{ config('services.bank_transfer.iban') }}</p>
     <p><strong>Банка:</strong> {{ config('services.bank_transfer.bank_name') }}</p>
     <p><strong>BIC:</strong> {{ config('services.bank_transfer.bic') }}</p>
-    <p><strong>Сума:</strong> {{ number_format($order->total, 2) }} {{ config('services.bank_transfer.currency') }}</p>
+    <p><strong>Сума:</strong>  {{ number_format($order->total, 2) }} {{ config('services.bank_transfer.currency') }} / {{ number_format($order->total*1.9558, 2) }} BGN</p>
     <p><strong>Основание:</strong> Поръчка #{{ $order->id }}</p>
     <p>След потвърждаване на плащането ще подготвим и изпратим пратката.</p>
     <hr>
@@ -42,6 +39,7 @@
 
 <h3>🚚 Адрес за доставка</h3>
 <p>{{ $order->shipping_address }}</p>
+<p>{{ $order->shipping_city }}</p>
 
 <p>Ще се свържем с теб при нужда.</p>
 

@@ -77,7 +77,7 @@ class OrderService
             // ✅ ЕДИН event, ясно и чисто
             OrderPlaced::dispatch($order->id);
 
-            if ($order->payment_method === 'bank_transfer') {
+            if (in_array($order->payment_method, ['bank_transfer', 'cod'], true)) {
                 dispatch(new CalculateBankTransferShippingJob($order->id));
             }
 

@@ -17,13 +17,7 @@ class ListSettings extends ListRecords
         return [
              CreateAction::make()
             ->label('Създай настройки')
-            ->visible(fn () =>
-                Auth::user()?->can('manage settings')
-                && ! Setting::exists()
-            )
-            ->authorize(fn () =>
-                Auth::user()?->can('manage settings')
-            ),
+            ->authorize(fn ($record) => SettingResource::canCreate($record)),
         ];
     }
 }

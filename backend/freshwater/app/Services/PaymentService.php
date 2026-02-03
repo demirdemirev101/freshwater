@@ -23,11 +23,9 @@ class PaymentService
         DB::transaction(function () use ($order) {
             $order->updateQuietly([
                 'payment_status' => 'unpaid',
-                'status'         => 'ready_for_shipment',
+                'status'         => 'pending_review',
             ]);
         });
-
-        OrderReadyForShipment::dispatch($order->id);
     }
 
     private function handleBankTransfer(Order $order): void

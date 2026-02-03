@@ -6,7 +6,6 @@ use App\Events\OrderPlaced;
 use App\Mail\OrderConfirmationMail;
 use App\Models\Order;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
 
 class SendOrderConfirmationEmail implements ShouldQueue
@@ -18,11 +17,17 @@ class SendOrderConfirmationEmail implements ShouldQueue
     {
         $order = Order::with('items')->findOrFail($event->orderId);
 
-        if ($order->payment_method === 'bank_transfer') {
+        if (in_array($order->payment_method, ['bank_transfer', 'cod'], true)) {
             return;
         }
 
-        if (!Cache::add("order_confirmation_sent_{$order->id}", true, now()->addMinutes(10))) {
+        $updated = Order::where('id', $order->id)
+            ->whereNull('order_confirmation_sent_at')
+            ->update([
+                'order_confirmation_sent_at' => now(),
+            ]);
+
+        if (! $updated) {
             return;
         }
 

@@ -141,6 +141,45 @@ class EcontService
     /**
      * Вземане на градове от Еконт
      */
+    /**
+     * Delete/cancel shipment labels
+     */
+    public function deleteLabels(array $shipmentNumbers): array
+    {
+        $response = Http::withOptions([
+                'verify' => config('services.econt.verify_ssl'),
+            ])
+            ->withBasicAuth($this->username, $this->password)
+            ->post("{$this->baseUrl}/Shipments/LabelService.deleteLabels.json", [
+                'shipmentNumbers' => $shipmentNumbers,
+            ]);
+
+        if ($response->failed()) {
+            $json = $response->json();
+
+            Log::error('Econt deleteLabels failed', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+                'json' => $json,
+                'shipment_numbers' => $shipmentNumbers,
+            ]);
+
+            $errorMessage = $this->extractErrorMessage($json['error'] ?? $json) ?? 'Unknown error';
+
+            throw new RuntimeException('Econt API error: ' . $errorMessage);
+        }
+
+        $data = $response->json();
+
+        if (isset($data['error'])) {
+            $errorMessage = $this->extractErrorMessage($data['error']) ?? 'Unknown error';
+
+            throw new RuntimeException('Econt error: ' . $errorMessage);
+        }
+
+        return $data;
+    }
+
     public function getCities(string $search = ''): array
     {
         $response = Http::withOptions([

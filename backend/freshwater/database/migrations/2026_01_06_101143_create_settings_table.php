@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('settings', function (Blueprint $table) {
             $table->id();
 
-            $table->decimal('delivery_price', 10, 2)->default(0.00);
+            $table->decimal('delivery_price', 10, 2)->nullable();
             $table->decimal('free_delivery_over', 10, 2)->nullable();
             $table->boolean('delivery_enabled')->default(true);
 

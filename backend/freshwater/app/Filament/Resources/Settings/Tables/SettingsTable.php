@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Settings\Tables;
 
+use App\Filament\Resources\Settings\SettingResource;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -24,14 +25,9 @@ class SettingsTable
                     ->falseIcon('heroicon-o-x-circle')
                     ->trueColor('success')
                     ->falseColor('danger'),
-                TextColumn::make('delivery_price')
-                    ->label('Цена за доставка')
-                    ->money('BGN')
-                    ->default(0.00)
-                    ->disabled(fn ($get) => $get('delivery_enabled') === false),
                 TextColumn::make('free_delivery_over')
                     ->label('Безплатна доставка над')
-                    ->money('BGN')
+                    ->money('EUR', 0.00)
                     ->disabled(fn ($get) => $get('delivery_enabled') === false),
             ])
             ->filters([
@@ -39,9 +35,9 @@ class SettingsTable
             ])
             ->recordActions([
                 EditAction::make()
-                    ->authorize(fn () => Auth::user()->can('manage settings')),
+                    ->authorize(fn ($record) => SettingResource::canEdit($record)),
                 DeleteAction::make()
-                    ->authorize(fn () => Auth::user()->can('manage settings')),
+                    ->authorize(fn ($record) => SettingResource::canDelete($record)),
             ])
             ->toolbarActions([
                 //

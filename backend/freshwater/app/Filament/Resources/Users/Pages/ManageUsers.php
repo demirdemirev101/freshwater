@@ -16,7 +16,7 @@ class ManageUsers extends ManageRecords
         return [
             CreateAction::make()
                 ->label('Създай потребител')
-                ->authorize(fn () => Auth::user()->can('create users')),
+                ->authorize(fn () => UserResource::canCreate()),
         ];
     }
 }

@@ -19,23 +19,36 @@ class ItemsRelationManager extends RelationManager
 {
     protected static string $relationship = 'items';
     protected static ?string $title = 'Поръчани артикули';
+    protected static ?string $modelLabel = 'артикул';
+    protected static ?string $pluralModelLabel = 'Поръчани артикули';
 
+    private function isLocked(): bool
+    {
+        $order = $this->getOwnerRecord();
+
+        if (! $order) {
+            return true;
+        }
+
+        return ! ($order->status === 'pending_review'
+            || ($order->payment_method === 'bank_transfer' && $order->payment_status !== 'paid'));
+    }
 
     public function form(Schema $schema): Schema
     {
         return $schema
             ->components([
                 Select::make('product_id')
-                ->label('Продукт')
-                ->relationship('product', 'name')
-                ->required()
-                ->preload(),
+                    ->label('Продукт')
+                    ->relationship('product', 'name')
+                    ->required()
+                    ->preload(),
 
-            TextInput::make('quantity')
-                ->label('Количество')
-                ->numeric()
-                ->required()
-                ->minValue(1),
+                TextInput::make('quantity')
+                    ->label('Количество')
+                    ->numeric()
+                    ->required()
+                    ->minValue(1),
             ]);
     }
 
@@ -51,7 +64,7 @@ class ItemsRelationManager extends RelationManager
 
                 TextColumn::make('price')
                     ->label('Цена')
-                    ->money('BGN')
+                    ->money('EUR')
                     ->sortable(),
 
                 TextColumn::make('quantity')
@@ -60,7 +73,7 @@ class ItemsRelationManager extends RelationManager
 
                 TextColumn::make('total')
                     ->label('Общо')
-                    ->money('BGN')
+                    ->money('EUR')
                     ->sortable(),
 
                 TextColumn::make('created_at')
@@ -85,7 +98,8 @@ class ItemsRelationManager extends RelationManager
                     })
                     ->after(function ($livewire) {
                         $livewire->dispatch('orderUpdated');
-                    }),
+                    })
+                    ->visible(fn () => ! $this->isLocked()),
             ])
             ->recordActions([
                 EditAction::make()
@@ -94,12 +108,14 @@ class ItemsRelationManager extends RelationManager
                             'quantity' => $data['quantity'],
                         ]);
                     })
-                    ->after(fn ($livewire) => $livewire->dispatch('orderUpdated')),
+                    ->after(fn ($livewire) => $livewire->dispatch('orderUpdated'))
+                    ->visible(fn () => ! $this->isLocked()),
                 DeleteAction::make()
                     ->action(function (OrderItem $record) {
                         app(OrderItemService::class)->delete($record);
                     })
-                    ->after(fn ($livewire) => $livewire->dispatch('orderUpdated')),
+                    ->after(fn ($livewire) => $livewire->dispatch('orderUpdated'))
+                    ->visible(fn () => ! $this->isLocked()),
             ])
             ->toolbarActions([
                 DeleteBulkAction::make()
@@ -110,7 +126,8 @@ class ItemsRelationManager extends RelationManager
                             $service->delete($record);
                         }
                     })
-                    ->after(fn ($livewire) => $livewire->dispatch('orderUpdated')),
+                    ->after(fn ($livewire) => $livewire->dispatch('orderUpdated'))
+                    ->visible(fn () => ! $this->isLocked()),
             ]);
     }
 }

@@ -25,12 +25,12 @@ class ProductsTable
                 TextColumn::make('price')
                     ->label('Цена')
                     ->placeholder('-')
-                    ->money('BGN')
+                    ->money('EUR', 0.00)
                     ->sortable(),
                 TextColumn::make('sale_price')
                     ->label('Цена с отстъпка')
                     ->placeholder('-')
-                    ->money('BGN')
+                    ->money('EUR', 0.00)
                     ->sortable(),
                 TextColumn::make('quantity')
                     ->label('Наличност')

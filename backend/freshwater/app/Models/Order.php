@@ -35,6 +35,8 @@ class Order extends Model
 
     protected $casts = [
         'holiday_delivery_day' => 'date',
+        'order_confirmation_sent_at' => 'datetime',
+        'admin_notification_sent_at' => 'datetime',
     ];
 
     public function user() : BelongsTo

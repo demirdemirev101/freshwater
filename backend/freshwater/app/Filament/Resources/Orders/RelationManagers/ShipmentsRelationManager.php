@@ -2,49 +2,18 @@
 
 namespace App\Filament\Resources\Orders\RelationManagers;
 
-use App\Events\OrderReadyForShipment;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Table;
-use App\Filament\Resources\Shipments\ShipmentResource;
 use Filament\Actions\Action;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
-use Filament\Notifications\Notification;
-use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
 
 class ShipmentsRelationManager extends RelationManager
 {
     protected static string $relationship = 'shipment';
     protected static ?string $title = 'Доставка';
     protected static ?string $recordTitleAttribute = 'tracking_number';
-
-    public function form(Schema $form): Schema
-    {
-        return $form
-            ->components([
-                TextInput::make('tracking_number')
-                    ->label('Tracking Number')
-                    ->disabled(),
-                
-                TextInput::make('weight')
-                    ->label('Тегло (kg)')
-                    ->numeric()
-                    ->step(0.001),
-
-                Select::make('status')
-                    ->label('Статус')
-                    ->options([
-                        'created' => 'Създаден',
-                        'pending' => 'Чака',
-                        'confirmed' => 'Потвърден',
-                        'picked_up' => 'Взет',
-                        'in_transit' => 'В транспорт',
-                        'delivered' => 'Доставен',
-                        'error' => 'Грешка',
-                    ]),
-            ]);
-    }
 
     public function table(Table $table): Table
     {
@@ -56,7 +25,7 @@ class ShipmentsRelationManager extends RelationManager
                     ->color('info'),
 
                 TextColumn::make('tracking_number')
-                    ->label('Tracking')
+                    ->label('Номер за проследяване')
                     ->copyable()
                     ->copyMessage('Копирано!')
                     ->placeholder('—'),
@@ -94,21 +63,26 @@ class ShipmentsRelationManager extends RelationManager
                 //
             ])
             ->recordActions([
-                Action::make('view')
-                    ->label('Виж')
-                    ->icon('heroicon-o-eye')
-                    ->url(fn ($record) => ShipmentResource::getUrl('view', ['record' => $record])),
-
                 Action::make('download_label')
                     ->label('Етикет')
                     ->icon('heroicon-o-arrow-down-tray')
                     ->color('success')
                     ->url(fn ($record) => $record->label_url)
                     ->openUrlInNewTab()
-                    ->visible(fn ($record) => !empty($record->label_url)),
+                    ->visible(fn () => $this->getOwnerRecord()?->status !== 'cancelled')
+                    ->authorize(fn ($record) => !empty($record->label_url) && Auth::user()->can('view shipments')),
             ])
             ->emptyStateHeading('Няма доставка')
             ->emptyStateIcon('heroicon-o-truck');
+    }
+
+    public static function canViewForRecord(Model $ownerRecord, string $pageClass): bool
+    {
+        if ($ownerRecord->status === 'cancelled') {
+            return false;
+        }
+
+        return parent::canViewForRecord($ownerRecord, $pageClass);
     }
 
     public function isReadOnly(): bool

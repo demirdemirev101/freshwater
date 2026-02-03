@@ -5,11 +5,19 @@
 
 Номер на пратка: **{{ $trackingNumber ?? 'N/A' }}**
 
-@if (!empty($labelUrl))
-<x-mail::button :url="$labelUrl">
-Изтегли товарителница
+@php
+    $trackingUrl = null;
+    if (!empty(config('services.econt.track_url')) && !empty($trackingNumber)) {
+        $trackingUrl = rtrim(config('services.econt.track_url'), '/');
+    }
+@endphp
+
+@if (!empty($trackingUrl))
+<x-mail::button :url="$trackingUrl">
+Проследи пратката
 </x-mail::button>
 @endif
+
 
 Благодарим,<br>
 {{ config('app.name') }}

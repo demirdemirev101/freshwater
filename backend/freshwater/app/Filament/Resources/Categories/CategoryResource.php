@@ -21,7 +21,7 @@ class CategoryResource extends Resource
 {
     protected static ?string $model = Category::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::PresentationChartBar;
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-rectangle-stack';
 
     protected static ?string $navigationLabel = 'Категории';
      protected static ?string $modelLabel = 'категория';
@@ -55,11 +55,6 @@ class CategoryResource extends Resource
     }
 
     public static function canDelete($record): bool
-    {
-        return Auth::user()->can('delete categories');
-    }
-
-    public static function canDeleteAny(): bool
     {
         return Auth::user()->can('delete categories');
     }

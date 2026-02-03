@@ -19,7 +19,7 @@ class SettingResource extends Resource
 {
     protected static ?string $model = Setting::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = 'uni-setting-o';
 
     protected static ?string $navigationLabel = 'Настройки';
      protected static ?string $modelLabel = 'настройки';
@@ -27,34 +27,32 @@ class SettingResource extends Resource
 
     public static function canAccess(): bool
     {
-        return Auth::check() && Auth::user()->can('manage settings');
+        return Auth::user()->can('manage settings');
     }
 
     public static function canViewAny(): bool
     {
-        return Auth::check() && Auth::user()->can('manage settings');
+        return Auth::user()->can('manage settings');
     }
 
     public static function canCreate(): bool
     {
-        return Auth::check()
-            && Auth::user()->can('manage settings')
-            && Setting::count() === 0;
+        return Auth::user()->can('manage settings') && Setting::count() === 0;
     }
 
     public static function canEdit($record): bool
     {
-        return Auth::check() && Auth::user()->can('manage settings');
+        return Auth::user()->can('manage settings');
     }
 
     public static function canDelete($record): bool
     {
-        return Auth::check() && Auth::user()->can('manage settings');
+        return Auth::user()->can('manage settings');
     }
 
     public static function canDeleteAny(): bool
     {
-        return Auth::check() && Auth::user()->can('manage settings');
+        return Auth::user()->can('manage settings');
     }
 
 

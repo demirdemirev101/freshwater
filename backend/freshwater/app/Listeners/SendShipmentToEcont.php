@@ -124,6 +124,13 @@ class SendShipmentToEcont implements ShouldQueue
             'error_message' => null,
         ]);
 
+        $shipment->loadMissing('order');
+        if ($shipment->order && $shipment->order->status !== 'cancelled') {
+            $shipment->order->update([
+                'status' => 'shipped',
+            ]);
+        }
+
         Log::info('Shipment confirmed by Econt', [
             'shipment_id' => $shipment->id,
             'tracking_number' => $label['shipmentNumber'],

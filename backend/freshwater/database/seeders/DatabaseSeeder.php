@@ -46,6 +46,11 @@ class DatabaseSeeder extends Seeder
             'edit order items',
             'delete order items',
 
+            //Shipments
+            'view shipments',
+            'create shipments',
+            'edit shipments',
+
             // Products
             'view products',
             'create products',
@@ -91,29 +96,17 @@ class DatabaseSeeder extends Seeder
         // Admin → operational permissions only
         $adminRole->givePermissionTo([
             'view orders',
-            'create orders',
             'edit orders',
-
+            'delete orders',
             'view order items',
-            'create order items',
-            'edit order items',
-
+            'delete order items',
+            'view shipments',
+            'create shipments',
             'view products',
-            'create products',
-            'edit products',
-
             'view related products',
-
             'view product images',
-            'create product images',
-
             'view categories',
-            'create categories',
-            'edit categories',
-
             'view users',
-            'create users',
-            'edit users',
         ]);
 
         /*

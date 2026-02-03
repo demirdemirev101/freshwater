@@ -16,6 +16,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Forms\Components\Select;
 use Illuminate\Support\Facades\Auth;
+use \Illuminate\Database\Eloquent\Model;
 
 class UserResource extends Resource
 {
@@ -30,12 +31,12 @@ class UserResource extends Resource
      =============================== */
     public static function canAccess(): bool
     {
-        return Auth::check() && Auth::user()->can('view users');
+        return Auth::user()->can('view users');
     }
 
     public static function canViewAny(): bool
     {
-        return Auth::check() && Auth::user()->can('view users');
+        return Auth::user()->can('view users');
     }
 
     /* ===============================
@@ -43,32 +44,27 @@ class UserResource extends Resource
      =============================== */
     public static function canCreate(): bool
     {
-        return Auth::user()?->can('create users');
+        return Auth::user()->can('create users');
     }
 
-    public static function canEdit($record): bool
+    public static function canEdit(Model $record): bool
     {
         // ❌ admin не може да редактира superadmin
         if ($record->hasRole('superadmin')) {
-            return Auth::user()?->hasRole('superadmin');
+            return false;
         }
 
-        return Auth::user()?->can('edit users');
+        return Auth::user()->can('edit users');
     }
 
-    public static function canDelete($record): bool
+    public static function canDelete(Model $record): bool
     {
         // ❌ никой не трие superadmin
         if ($record->hasRole('superadmin')) {
             return false;
         }
 
-        return Auth::user()?->can('delete users');
-    }
-
-    public static function canDeleteAny(): bool
-    {
-        return Auth::user()?->can('delete users');
+        return Auth::user()->can('delete users');
     }
 
     public static function form(Schema $schema): Schema
@@ -119,14 +115,14 @@ class UserResource extends Resource
             ])
             ->recordActions([
                 EditAction::make()
-                    ->authorize(fn () => Auth::user()->can('edit users')),
+                    ->authorize(fn (Model $record) => UserResource::canEdit($record)),
                 DeleteAction::make()
-                    ->authorize(fn () => Auth::user()->can('delete users')),
+                    ->authorize(fn (Model $record) => UserResource::canDelete($record)),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make()
-                        ->authorize(fn () => Auth::user()->can('delete users')),
+                        ->authorize(fn () => UserResource::canDeleteAny()),
                 ]),
             ]);
     }

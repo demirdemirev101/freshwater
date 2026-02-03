@@ -32,7 +32,7 @@ class CalculateBankTransferShippingJob implements ShouldQueue
     {
         $order = Order::with('items')->find($this->orderId);
 
-        if (! $order || $order->payment_method !== 'bank_transfer') {
+        if (! $order || ! in_array($order->payment_method, ['bank_transfer', 'cod'], true)) {
             return;
         }
 
@@ -57,8 +57,16 @@ class CalculateBankTransferShippingJob implements ShouldQueue
         $order->saveQuietly();
 
         if (! empty($order->customer_email)) {
-            Mail::to($order->customer_email)
-                ->send(new OrderConfirmationMail($order->id));
+            $updated = Order::where('id', $order->id)
+                ->whereNull('order_confirmation_sent_at')
+                ->update([
+                    'order_confirmation_sent_at' => now(),
+                ]);
+
+            if ($updated) {
+                Mail::to($order->customer_email)
+                    ->send(new OrderConfirmationMail($order->id));
+            }
         }
     }
 

@@ -18,17 +18,10 @@ class SettingForm
                     ->label('Активна доставка')
                     ->default(true)
                     ->reactive(),
-                TextInput::make('delivery_price')
-                    ->label('Цена за доставка')
-                    ->numeric()
-                    ->prefix('BGN')
-                    ->default(0.00)
-                    ->required()
-                    ->disabled(fn ($get) => $get('delivery_enabled') === false),
                 TextInput::make('free_delivery_over')
                     ->label('Безплатна доставка над')
                     ->numeric()
-                    ->prefix('BGN')
+                    ->prefix('€ ')
                     ->nullable()
                     ->helperText('Остави празно, ако няма безплатна доставка')
                     ->disabled(fn ($get) => $get('delivery_enabled') === false),

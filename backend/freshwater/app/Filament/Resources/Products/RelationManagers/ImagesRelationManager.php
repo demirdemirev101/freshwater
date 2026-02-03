@@ -35,21 +35,21 @@ class ImagesRelationManager extends RelationManager
 
     public static function canViewRecord($ownerRecord): bool
     {
-        return Auth::user()?->can('view product images');
+        return Auth::user()->can('view product images');
     }
     protected function canEdit($record): bool
     {
-        return Auth::user()?->can('edit product images');
+        return Auth::user()->can('edit product images');
     }
 
     protected function canCreate(): bool
     {
-        return Auth::user()?->can('create product images');
+        return Auth::user()->can('create product images');
     }
 
     protected function canDelete($record): bool
     {
-        return Auth::user()?->can('delete product images');
+        return Auth::user()->can('delete product images');
     }
 
     public function form(Schema $schema): Schema
@@ -91,21 +91,21 @@ class ImagesRelationManager extends RelationManager
             ->headerActions([
                 CreateAction::make()
                     ->label('Качи изображение')
-                    ->visible(fn () => Auth::user()->can('create product images')),
+                    ->authorize(fn () => ImagesRelationManager::canCreate($this->getOwnerRecord())),
             ])
             ->recordActions([
                 EditAction::make()
                     ->label('Редактирай')
-                    ->authorize(fn () => Auth::user()->can('edit product images')),
+                    ->authorize(fn () => ImagesRelationManager::canEdit($this->getOwnerRecord())),
                 DeleteAction::make()
                     ->label('Изтрий')
-                    ->authorize(fn () => Auth::user()->can('delete product images')),
+                    ->authorize(fn () => ImagesRelationManager::canDelete($this->getOwnerRecord())),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make()
                         ->label('Изтрий избраните')
-                        ->authorize(fn () => Auth::user()?->can('delete product images')),
+                        ->authorize(fn () => ImagesRelationManager::canDelete($this->getOwnerRecord())),
                 ]),
             ]);
     }

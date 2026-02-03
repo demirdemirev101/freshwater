@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Categories\Tables;
 
+use App\Filament\Resources\Categories\CategoryResource;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -34,14 +35,14 @@ class CategoriesTable
             ->recordActions([
                 EditAction::make()
                     ->label('Редактирай')
-                    ->authorize(fn () => Auth::user()->can('edit categories')),
+                    ->authorize(fn ($record) => CategoryResource::canEdit($record)),
                 DeleteAction::make()
-                    ->authorize(fn () => Auth::user()->can('delete categories')),
+                    ->authorize(fn ($record) => CategoryResource::canDelete($record)),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make()
-                        ->authorize(fn () => Auth::user()->can('delete categories')),
+                        ->authorize(fn ($record) => CategoryResource::canDelete($record)),
                 ]),
             ]);
     }

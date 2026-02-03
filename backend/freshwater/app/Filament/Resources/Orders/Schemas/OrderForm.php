@@ -2,19 +2,23 @@
 
 namespace App\Filament\Resources\Orders\Schemas;
 
+use App\Enums\OrderStatus;
+use App\Enums\PaymentMethod;
+use App\Enums\PaymentStatus;
+use App\Models\User;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Schemas\Schema;
-use App\enums\PaymentMethod;
-use App\enums\PaymentStatus;
-use App\enums\OrderStatus;
-use App\Models\User;
 
 class OrderForm
 {
     public static function configure(Schema $schema): Schema
     {
+        $isLocked = fn ($record) => $record
+            && ! ($record->status === 'pending_review'
+                || ($record->payment_method === 'bank_transfer' && $record->payment_status !== 'paid'));
+
         return $schema
             ->components([
                 Select::make('user_id')
@@ -36,28 +40,36 @@ class OrderForm
                         $set('customer_name', $user->name);
                         $set('customer_email', $user->email);
                         $set('customer_phone', $user->phone);
-                    }),
+                    })
+                    ->visible(fn ($record) => (bool) $record->user_id)
+                    ->disabled($isLocked),
 
                 TextInput::make('customer_name')
-                    ->disabled(fn ($get) => (bool) $get('user_id')),
+                    ->label('Име на клиента')
+                    ->disabled(fn ($record, $get) => $isLocked($record) || (bool) $get('user_id')),
 
                 TextInput::make('customer_email')
-                    ->disabled(fn ($get) => (bool) $get('user_id')),
+                    ->label('Имейл')
+                    ->disabled(fn ($record, $get) => $isLocked($record) || (bool) $get('user_id')),
 
                 TextInput::make('customer_phone')
+                    ->label('Телефон')
                     ->tel()
-                    ->disabled(fn ($get) => (bool) $get('user_id')),
+                    ->disabled(fn ($record, $get) => $isLocked($record) || (bool) $get('user_id')),
 
                 TextInput::make('shipping_address')
                     ->label('Адрес за доставка')
-                    ->required(),
+                    ->required()
+                    ->disabled($isLocked),
 
                 TextInput::make('shipping_city')
                     ->label('Град за доставка')
-                    ->required(),
+                    ->required()
+                    ->disabled($isLocked),
 
                 TextInput::make('shipping_postcode')
-                    ->label('Пощенски код'),
+                    ->label('Пощенски код')
+                    ->disabled($isLocked),
 
                 Select::make('status')
                     ->label('Статус на поръчката')
@@ -69,18 +81,19 @@ class OrderForm
                     ->required()
                     ->default(OrderStatus::PENDING->value)
                     ->native(false)
-                    ->preload(),
+                    ->preload()
+                    ->disabled(),
 
-                // 🔥 DERIVED FIELDS (READ ONLY)
                 TextInput::make('subtotal')
                     ->label('Междинна сума')
                     ->numeric()
-                    ->prefix('лв. ')
+                    ->prefix('EUR ')
                     ->disabled()
                     ->dehydrated(false),
 
                 TextInput::make('shipping_price')
                     ->label('Цена за доставка')
+                    ->prefix('EUR ')
                     ->numeric()
                     ->disabled()
                     ->dehydrated(false),
@@ -88,7 +101,7 @@ class OrderForm
                 TextInput::make('total')
                     ->label('Обща сума')
                     ->numeric()
-                    ->prefix('лв. ')
+                    ->prefix('EUR ')
                     ->disabled()
                     ->dehydrated(false),
 
@@ -100,9 +113,10 @@ class OrderForm
                             ->toArray()
                     )
                     ->required()
-                    ->default(PaymentMethod::CASH->value)
+                    ->default(PaymentMethod::COD->value)
                     ->native(false)
-                    ->preload(),
+                    ->preload()
+                    ->disabled(),
 
                 Select::make('payment_status')
                     ->label('Статус на плащане')
@@ -112,14 +126,14 @@ class OrderForm
                             ->toArray()
                     )
                     ->required()
-                    ->default(PaymentStatus::UNPAID->value)
+                    ->default(PaymentStatus::PENDING->value)
                     ->native(false)
-                    ->preload(),
+                    ->preload()
+                    ->disabled(),
 
                 Textarea::make('notes')
-                    ->label('Бележки'),
+                    ->label('Бележки')
+                    ->disabled(),
             ]);
     }
 }
-
-

@@ -1,19 +1,17 @@
 <?php
 
-namespace App\enums;
+namespace App\Enums;
 
 enum PaymentMethod: string
 {
-    case CASH = 'cash';
+    case COD = 'cod';
     case BANK_TRANSFER = 'bank_transfer';
-    case CARD = 'card';
 
     public function label(): string
     {
         return match ($this) {
-            self::CASH => 'В брой',
+            self::COD => 'Наложен платеж',
             self::BANK_TRANSFER => 'Банков превод',
-            self::CARD => 'Карта',
         };
     }
 }

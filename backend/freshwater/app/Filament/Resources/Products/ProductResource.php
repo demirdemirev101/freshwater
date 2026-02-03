@@ -21,7 +21,7 @@ class ProductResource extends Resource
 {
     protected static ?string $model = Product::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::ArchiveBox;
 
     protected static ?string $navigationLabel = 'Продукти';
     protected static ?string $modelLabel = 'продукт';
@@ -32,7 +32,7 @@ class ProductResource extends Resource
      =============================== */
     public static function canAccess(): bool
     {
-        return Auth::check() && Auth::user()->can('view products');
+        return Auth::user()->can('view products');
     }
 
     /* ===============================
@@ -40,24 +40,24 @@ class ProductResource extends Resource
      =============================== */
     public static function canCreate(): bool
     {
-        return Auth::user()?->can('create products');
+        return Auth::user()->can('create products');
     }
 
     public static function canEdit($record): bool
     {
-        return Auth::user()?->can('edit products');
+        return Auth::user()->can('edit products');
     }
     public static function canDelete($record): bool
     {
-        return Auth::user()?->can('delete products');
+        return Auth::user()->can('delete products');
     }
     public static function canView($record): bool
     {
-        return Auth::user()?->can('view products');
+        return Auth::user()->can('view products');
     }
     public static function canViewAny(): bool
     {
-        return Auth::user()?->can('view products');
+        return Auth::user()->can('view products');
     }
     //=============================
     public static function form(Schema $schema): Schema

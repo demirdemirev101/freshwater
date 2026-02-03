@@ -42,6 +42,7 @@ return [
         
         'base_url' => env('ECONT_BASE_URL', 'https://demo.econt.com/ee/services'),
         // За реална среда: 'https://ee.econt.com/services'
+        'track_url' => env('ECONT_TRACK_URL', null),
         
         'username' => env('ECONT_USERNAME'),
         'password' => env('ECONT_PASSWORD'),
@@ -67,7 +68,7 @@ return [
         'iban' => env('BANK_TRANSFER_IBAN', 'BG00XXXX00000000000000'),
         'bank_name' => env('BANK_TRANSFER_BANK', 'Demo Bank'),
         'bic' => env('BANK_TRANSFER_BIC', 'DEMOXXX'),
-        'currency' => env('BANK_TRANSFER_CURRENCY', 'BGN'),
+        'currency' => env('BANK_TRANSFER_CURRENCY', 'EUR'),
     ],
 
 ];

@@ -4,7 +4,7 @@
 <p><strong>Клиент:</strong> {{ $order->customer_name }}</p>
 <p><strong>Email:</strong> {{ $order->customer_email }}</p>
 <p><strong>Град:</strong> {{ $order->shipping_city }}</p>
-<p><strong>Сума:</strong> {{ number_format($order->total, 2) }} лв.</p>
+<p><strong>Сума:</strong> {{ number_format($order->subtotal, 2) }}€/{{ number_format($order->subtotal*1.9558, 2) }} лв.</p>
 
 <hr>
 

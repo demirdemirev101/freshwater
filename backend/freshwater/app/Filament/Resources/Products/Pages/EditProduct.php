@@ -17,7 +17,7 @@ class EditProduct extends EditRecord
         return [
             DeleteAction::make()
                 ->label('Изтрий продукт')
-                ->authorize(fn () => Auth::user()?->can('delete products')),
+                ->authorize(fn () => ProductResource::canDelete($this->record)),
         ];
     }
 }

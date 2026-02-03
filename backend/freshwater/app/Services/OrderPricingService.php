@@ -38,8 +38,8 @@ class OrderPricingService
             return;
         }
 
-        if ($order->payment_method === 'bank_transfer') {
-            // Defer Econt calculate to async job for bank transfer.
+        if (in_array($order->payment_method, ['bank_transfer', 'cod'], true)) {
+            // Defer Econt calculate to async job for bank transfer and COD.
             $order->shipping_price = 0;
             return;
         }

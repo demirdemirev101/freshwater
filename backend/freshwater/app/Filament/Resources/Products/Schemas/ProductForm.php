@@ -44,12 +44,12 @@ class ProductForm
                                 ->label('Цена')
                                 ->numeric()
                                 ->required()
-                                ->prefix('BGN'),
+                                ->prefix('€ '),
 
                             TextInput::make('sale_price')
                                 ->label('Цена с отстъпка')
                                 ->numeric()
-                                ->prefix('BGN'),
+                                ->prefix('€ '),
                         ]),
 
                         Toggle::make('stock')

@@ -22,22 +22,23 @@ class OrderResource extends Resource
 {
     protected static ?string $model = Order::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::ShoppingCart;
 
     protected static ?string $navigationLabel = 'Поръчки';
     protected static ?string $pluralModelLabel = 'Поръчки';
+    protected static ?string $modelLabel = 'Поръчка';
 
     /* ===============================
      | Access
      =============================== */
     public static function canAccess(): bool
     {
-        return Auth::check() && Auth::user()->can('view orders');
+        return Auth::user()->can('view orders');
     }
 
     public static function canViewAny(): bool
     {
-        return Auth::check() && Auth::user()->can('view orders');
+        return Auth::user()->can('view orders');
     }
 
     /* ===============================
@@ -50,7 +51,7 @@ class OrderResource extends Resource
 
     public static function canEdit($record): bool
     {
-        return Auth::user()?->can('edit orders');
+        return Auth::user()->can('edit orders');
     }
 
     public static function canDelete($record): bool
@@ -86,7 +87,6 @@ class OrderResource extends Resource
         return [
             'index' => ListOrders::route('/'),
             'edit' => EditOrder::route('/{record}/edit'),
-            'view' => ViewOrder::route('/{record}'),
         ];
     }
 }
