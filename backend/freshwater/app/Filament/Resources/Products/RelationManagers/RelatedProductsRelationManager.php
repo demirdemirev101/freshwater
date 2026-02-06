@@ -42,9 +42,10 @@ class RelatedProductsRelationManager extends RelationManager
                 TextColumn::make('sale_price')
                     ->label('Цена с отстъпка')
                     ->money('BGN')
-                    ->placeholder('-'),
+                    ->visible(fn ($record) => $record?->sale_price !== null),
 
                 IconColumn::make('stock')
+                    ->visible(fn ($record) => $record?->stock === false)
                     ->label('Наличност')
                     ->boolean(),
             ])

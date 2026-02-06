@@ -8,6 +8,9 @@ use App\Models\Order;
 
 class Shipment extends Model
 {
+    /**
+     * The attributes that are mass assignable.
+     */
     protected $fillable = [
         'order_id',
         'carrier',
@@ -34,6 +37,10 @@ class Shipment extends Model
         'error_message',
     ];
 
+    /**
+     * Cast specific attributes to appropriate data types for consistent handling in the application.
+     */
+
     protected $casts = [
         'carrier_payload' => 'array',
         'carrier_response' => 'array',
@@ -47,6 +54,9 @@ class Shipment extends Model
         'sent_to_carrier_at' => 'datetime',
     ];
 
+    /**
+     * Define a belongs-to relationship to the Order model, indicating that each Shipment is associated with a single Order.
+     */
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);
