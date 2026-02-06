@@ -3,6 +3,9 @@
 namespace App\Providers\Filament;
 
 use App\Http\Middleware\EnsureUserCanAccessAdmin;
+use App\Filament\Widgets\CancelledReturnedPerDayChart;
+use App\Filament\Widgets\OrdersPerDayChart;
+use App\Filament\Widgets\RevenuePerDayChart;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -39,8 +42,9 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->widgets([
-                AccountWidget::class,
-                FilamentInfoWidget::class,
+                OrdersPerDayChart::class,
+                RevenuePerDayChart::class,
+                CancelledReturnedPerDayChart::class,
             ])
             ->middleware([
                 EncryptCookies::class,

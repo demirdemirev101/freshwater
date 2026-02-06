@@ -38,7 +38,6 @@ class ProductForm
                     ->columnSpanFull(),
                 Section::make('Цени и наличност')
                     ->schema([
-
                         Grid::make(2)->schema([
                             TextInput::make('price')
                                 ->label('Цена')
