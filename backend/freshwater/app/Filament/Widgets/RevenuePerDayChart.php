@@ -10,7 +10,8 @@ use Illuminate\Support\Facades\DB;
 class RevenuePerDayChart extends ChartWidget
 {
     protected ?string $heading = 'Печалби за деня';
-
+    protected ?string $pollingInterval = '100s';
+    
     protected int | string | array $columnSpan = 'full';
     protected static ?int $sort = 3;
     protected ?string $maxHeight = '300px';

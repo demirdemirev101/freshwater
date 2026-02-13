@@ -9,9 +9,9 @@ use RuntimeException;
 class StockService
 {
     /**
-     * Validate and reserve stock atomically.
-     * 
-     * @throws RuntimeException
+     * Reserve stock for a product. This method attempts to decrement the product's quantity by the specified amount.
+     *  If the product does not have sufficient quantity available, it throws a CheckoutException with a message indicating insufficient stock for the product.
+     *  The method uses an atomic database operation to ensure that the stock reservation is handled safely in concurrent environments.
      */
 
     public function reserve(Product $product, int $quantity): void
@@ -27,7 +27,9 @@ class StockService
     }
 
     /**
-     * Release stock (used only on rollback / cancel).
+     * Release reserved stock for a product. This method increments the product's quantity by the specified amount,
+     *  effectively releasing the reserved stock back into inventory.
+     * The method uses an atomic database operation to ensure that the stock release is handled safely in concurrent environments.
      */
     public function release(Product $product, int $quantity): void
     {

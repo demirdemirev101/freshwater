@@ -2,9 +2,8 @@
 
 namespace App\Providers;
 
-use App\Services\Econt\EcontService;
 use Illuminate\Support\ServiceProvider;
-use App\Services\Econt\MockEcontService;
+use Illuminate\Support\Facades\URL;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -21,6 +20,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        if ($this->app->environment('production')) {
+            URL::forceScheme('https');
+        }
     }
 }

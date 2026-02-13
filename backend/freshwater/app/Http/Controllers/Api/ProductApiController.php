@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\ProductAPIResource;
 use App\Models\Product;
 use Illuminate\Http\Request;
 
@@ -15,6 +16,6 @@ class ProductApiController extends Controller
             'images:id,product_id,image_path,is_primary,sort_order',
         ])->get();
 
-        return response()->json($products);
+        return ProductAPIResource::collection($products);
     }
 }

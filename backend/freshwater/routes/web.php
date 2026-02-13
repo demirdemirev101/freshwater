@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\ProductApiController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
 use Illuminate\Support\Facades\Route;
@@ -17,4 +18,6 @@ Route::prefix('cart')->group(function () {
 });
 
 Route::post('/checkout', [CheckoutController::class, 'store']);
+
+Route::get('/products', [ProductApiController::class, 'index']);
 

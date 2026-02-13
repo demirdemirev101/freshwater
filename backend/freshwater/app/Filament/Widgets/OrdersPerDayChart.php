@@ -12,6 +12,8 @@ class OrdersPerDayChart extends ChartWidget
     protected ?string $heading = 'Поръчки за деня';
     protected static ?int $sort = 1;
 
+    protected ?string $pollingInterval = '100s';
+
     protected function getData(): array
     {
         $days = $this->lastDays(14);
