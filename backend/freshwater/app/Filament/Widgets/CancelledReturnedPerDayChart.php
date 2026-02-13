@@ -11,6 +11,7 @@ class CancelledReturnedPerDayChart extends ChartWidget
 {
     protected ?string $heading = 'Върнати и анулирани поръчки през последните 14 дни';
     protected static ?int $sort = 2;
+    protected ?string $pollingInterval = '100s';
 
     protected function getData(): array
     {

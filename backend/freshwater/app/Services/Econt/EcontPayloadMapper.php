@@ -9,10 +9,6 @@ use RuntimeException;
 
 class EcontPayloadMapper
 {
-    public function __construct(
-        private EcontCityResolverService $cityResolver
-    ) {}
-
     public function map(Shipment $shipment): array
     {
         $order = $shipment->order;
@@ -141,17 +137,6 @@ class EcontPayloadMapper
         }
 
         // 2ï¸âƒ£ Resolve Econt city ID (city â‰  office)
-        $cityId = $this->cityResolver->getCityId($cityName, $postCode);
-
-        if (!$cityId) {
-            Log::error('Econt city resolve failed', [
-                'order_id' => $order->id ?? null,
-                'city' => $cityName,
-                'postcode' => $postCode,
-            ]);
-
-            throw new RuntimeException("City not found in Econt: {$cityName} ({$postCode})");
-        }
 
         // 3ï¸âƒ£ Build receiver address payload
         $address = [
@@ -183,7 +168,6 @@ class EcontPayloadMapper
         // 5ï¸âƒ£ Debug log (Ð¼Ð¾Ð¶ÐµÑˆ Ð´Ð° Ð³Ð¾ Ð¼Ð°Ñ…Ð½ÐµÑˆ Ð² prod)
         Log::info('Econt receiver address built', [
             'order_id' => $order->id ?? null,
-            'city_id' => $cityId,
             'city' => $cityName,
             'postcode' => $postCode,
         ]);
@@ -208,11 +192,6 @@ class EcontPayloadMapper
             'name' => $cityName,
             'postCode' => $postCode,
         ];
-
-        $cityId = $this->cityResolver->getCityId($cityName, $postCode);
-        if ($cityId) {
-            $city['id'] = $cityId;
-        }
 
         $address = [
             'city' => $city,
@@ -243,3 +222,4 @@ class EcontPayloadMapper
         return $date->toDateString();
     }
 }
+

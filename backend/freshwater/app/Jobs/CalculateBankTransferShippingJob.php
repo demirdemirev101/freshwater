@@ -5,7 +5,7 @@ namespace App\Jobs;
 use App\Mail\OrderConfirmationMail;
 use App\Models\Order;
 use App\Models\Setting;
-use App\Services\OrderPricingService;
+use App\Services\SettingsService;
 use App\Support\ErrorMessages;
 use App\Jobs\NotifyAdminBankTransferShippingFailedJob;
 use RuntimeException;
@@ -28,7 +28,7 @@ class CalculateBankTransferShippingJob implements ShouldQueue
         public int $orderId
     ) {}
 
-    public function handle(OrderPricingService $orderPricingService): void
+    public function handle(SettingsService $settingsService): void
     {
         $order = Order::with('items')->find($this->orderId);
 
@@ -46,7 +46,7 @@ class CalculateBankTransferShippingJob implements ShouldQueue
         if ($freeDelivery || ! config('services.econt.enabled')) {
             $order->shipping_price = 0;
         } else {
-            $order->shipping_price = $orderPricingService->calculateEcontShippingForOrder($order);
+            $order->shipping_price = $settingsService->calculateEcontShippingForOrder($order);
         }
 
         if (! $freeDelivery && config('services.econt.enabled') && $order->shipping_price <= 0) {

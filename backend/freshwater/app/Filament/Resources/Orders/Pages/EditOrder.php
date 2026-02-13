@@ -33,6 +33,10 @@ class EditOrder extends EditRecord
 
     public function pollShipmentStatus(): void
     {
+        if (property_exists($this, 'mountedActions') && ! empty($this->mountedActions)) {
+            return;
+        }
+
         $record = $this->getRecord()->fresh(['shipment']);
 
         if (! $record) {
@@ -46,12 +50,10 @@ class EditOrder extends EditRecord
         $shipment = $record->shipment;
 
         if (! $shipment) {
-            $this->refreshUi();
             return;
         }
 
         if (empty($shipment->carrier_shipment_id)) {
-            $this->refreshUi();
             return;
         }
 
@@ -125,15 +127,26 @@ class EditOrder extends EditRecord
                 $updates['status'] = 'in_transit';
             }
 
-            $shipment->update($updates);
+            $shipment->fill($updates);
+            $shipmentChanged = $shipment->isDirty();
+
+            if ($shipmentChanged) {
+                $shipment->save();
+            }
+
+            $orderChanged = false;
 
             if ($delivered && $record->status !== 'completed') {
                 $record->update(['status' => 'completed']);
+                $orderChanged = true;
             } elseif ($inTransit && $record->status !== 'shipped' && $record->status !== 'completed') {
                 $record->update(['status' => 'shipped']);
+                $orderChanged = true;
             }
 
-            $this->refreshUi();
+            if ($shipmentChanged || $orderChanged) {
+                $this->refreshUi();
+            }
         } catch (\Throwable $e) {
             Log::error('Econt tracking failed', [
                 'order_id' => $record->id,
@@ -141,6 +154,21 @@ class EditOrder extends EditRecord
                 'error' => $e->getMessage(),
             ]);
         }
+    }
+
+    public function shouldPollShipmentStatus(): bool
+    {
+        $record = $this->getRecord()->fresh(['shipment']);
+
+        if (! $record) {
+            return false;
+        }
+
+        if (in_array($record->status, ['completed', 'cancelled', 'returned'], true)) {
+            return false;
+        }
+
+        return ! empty($record->shipment?->carrier_shipment_id);
     }
 
     private function isLocked(): bool

@@ -1,5 +1,5 @@
 <x-filament-panels::page>
-    <div wire:poll.60s="pollShipmentStatus">
+    <div @if ($this->shouldPollShipmentStatus()) wire:poll.60s="pollShipmentStatus" @endif>
         {{ $this->content }}
     </div>
 </x-filament-panels::page>
