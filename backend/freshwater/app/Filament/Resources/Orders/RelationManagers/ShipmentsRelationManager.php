@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Orders\RelationManagers;
 
+use Dom\Text;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Table;
 use Filament\Actions\Action;
@@ -58,6 +59,16 @@ class ShipmentsRelationManager extends RelationManager
                 TextColumn::make('created_at')
                     ->label('Създаден')
                     ->dateTime('d.m.Y H:i'),
+
+                TextColumn::make('expected_delivery_at')
+                    ->label('Очаквана дата на доставка')
+                    ->getStateUsing(fn ($record) =>
+                        data_get($record->carrier_response, 'tracking.shipmentStatuses.0.status.deliveryDate')
+                        ?? data_get($record->carrier_response, 'tracking.shipmentStatuses.0.status.expectedDeliveryDate')
+                    )
+                    ->dateTime('d.m.Y H:i')
+                    ->placeholder('—'),
+
             ])
             ->headerActions([
                 //
