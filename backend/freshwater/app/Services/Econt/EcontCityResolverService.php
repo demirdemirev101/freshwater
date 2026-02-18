@@ -11,11 +11,24 @@ class EcontCityResolverService
         private EcontService $econtService
     ) {}
 
+    /**
+     * Attempts to resolve an Econt city ID based on the provided city name and optional post code.
+     * The resolution process prioritizes:
+     * 1 Exact name + post code match
+     * 2 Exact name + region name match
+     * 3 Exact name + courier-enabled match
+     * If no unique match is found, null is returned. Results are cached for 30 days to optimize performance.
+     * @param string $cityName The name of the city to resolve.
+     * @param string|null $postCode Optional post code to assist in resolution.
+     * @return int|null The resolved city ID or null if resolution fails.
+     * @throws \Exception If the Econt API call fails or returns an unexpected response.
+     */
     public function getCityId(string $cityName, ?string $postCode = null): ?int
     {
         $normalizedName = mb_strtolower(trim($cityName));
         $normalizedPostCode = $postCode ? trim($postCode) : null;
 
+        // Generate a cache key based on the normalized city name and post code
         $cacheKey = 'econt_city_' . md5($normalizedName . '_' . $normalizedPostCode);
 
         return Cache::remember($cacheKey, now()->addDays(30), function () use ($cityName, $normalizedName, $normalizedPostCode) {
@@ -89,6 +102,14 @@ class EcontCityResolverService
         });
     }
 
+    /**
+     * Retrieves a list of Econt offices for a given city name. The method first resolves the city ID using the getCityId method.
+     * If the city ID cannot be resolved, an empty array is returned. Otherwise,
+     *  the offices are fetched from the Econt API and cached for 7 days to optimize performance.
+     *  Any errors during the API call are logged and an empty array is returned in case of failure.
+     * @param string $cityName The name of the city for which to retrieve offices.
+     * @return array An array of offices associated with the resolved city ID, or an empty array if the city cannot be resolved or if the API call fails.
+     */
     public function getOffices(string $cityName): array
     {
         $cityId = $this->getCityId($cityName);
