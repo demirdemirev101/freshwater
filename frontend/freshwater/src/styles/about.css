@@ -1,21 +1,38 @@
 .about-hero {
   width: 100%;
-  height: 85vh;
-  background-image: url("/images/about-hero.jpg");
+  height: 55vh;
+
+  margin-top: 4.7rem;
+
+  padding-top: 80px;
+
+  background-image: url("../assets/for-us.jpg");
   background-size: cover;
-  background-position: center;
+  background-position: center 1300%;
   position: relative;
+}
+
+:root {
+  --fw-green-h: 145;
+  --fw-green-s: 60%;
+  --fw-green-l: 45%;
+
+  --fw-blue-h: 205;
+  --fw-blue-s: 80%;
+  --fw-blue-l: 40%;
 }
 
 /* Overlay (синьо-зелен градиент като на freshwater) */
 .about-hero-overlay {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(
-    90deg,
-    rgba(0, 140, 160, 0.65) 0%,
-    rgba(0, 140, 160, 0.55) 40%,
-    rgba(0, 140, 160, 0.25) 100%
+ background: linear-gradient(
+    to bottom,
+    hsla(var(--fw-green-h), var(--fw-green-s), var(--fw-green-l), 0.35) 0%,
+    hsla(190, 70%, 40%, 0.65) 20%,
+    hsla(var(--fw-blue-h), var(--fw-blue-s), var(--fw-blue-l), 0.45) 100%
   );
   display: flex;
   align-items: center;
@@ -24,27 +41,51 @@
 
 /* Текстът вдясно */
 .about-hero-content {
-  margin-right: 120px;
+  margin-right: 12rem;
   text-align: left;
   color: white;
 }
 
 .about-hero-content h1 {
-  font-size: 56px;
+  font-size: 46px;
+  margin-top: 40px;
+  text-align: center;
   font-weight: 700;
-  margin-bottom: 30px;
-  letter-spacing: 2px;
+  font-family: "Ubuntu", Sans-serif;
+  margin-bottom: 40px;
+  letter-spacing: 1px;
 }
 
 .about-hero-btn {
-  padding: 14px 32px;
-  font-size: 16px;
-  border: none;
+  padding: 14px 36px;          /* по-широк и леко по-висок */
+  font-size: 16px;             /* по-едър текст */
+  font-weight: 500;
   border-radius: 6px;
-  background-color: #2fb7b4;
-  color: white;
+  background: linear-gradient(90deg, #1e9c8b, #3dd6b5);
+  color: #ffffff;              /* бял текст по подразбиране */
+  border: none;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: all 0.25s ease;  /* плавни анимации */
+}
+
+
+.about-hero-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+  background: linear-gradient(90deg, #25979b, #2fcfa8);
+}
+
+.about-hero-btn:hover {
+  transform: scale(1.05);      /* леко уголемяване */
+}
+
+.about-hero-btn:hover {
+  color: #0b4fa2;              /* тъмно син САМО за текста */
+}
+
+.about-hero-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 6px 12px rgba(69, 68, 68, 0.327);
 }
 
 .about-hero-btn:hover {
@@ -64,5 +105,168 @@
 
   .about-hero-content h1 {
     font-size: 42px;
+  }
+}
+
+/* WHO WE ARE SECTION */
+
+.about-who {
+  padding: 0px 120px 0;
+  background-color: #ffffff;
+}
+
+.about-who-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 40px;
+  text-align: left;
+}
+
+.about-who h2 {
+  text-align: center;
+  font-size: 36px;
+  margin-bottom: 40px;
+  font-weight: 400;
+}
+
+.about-who h2 span {
+  font-style: italic;
+  font-weight: 600;
+  font-size: 45px;
+  color: #1e9c8b;
+}
+
+/* Layout */
+.about-who-content {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 32px;
+  align-items: start;
+}
+
+.about-who-logo {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 190px;
+}
+
+.about-who-logo img {
+  width: 180px;
+  max-width: 100%;
+  display: block;
+}
+
+/* Text */
+.about-who-text {
+  max-width: 720px;
+}
+
+.about-who-text p {
+  font-size: 16px;
+  line-height: 1.8;
+  color: rgba(85, 85, 85, 0.85);
+  margin-bottom: 18px;
+}
+
+.about-who-text .highlight {
+  font-size: 18px;
+  font-weight: 500;
+  text-align: center;
+  color: #222;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .about-who-content {
+    grid-template-columns:260px 1fr;
+    gap: 40px;
+    text-align: center;
+  }
+
+  .about-who-logo {
+    margin-top: 40px;
+    display: flex;
+    justify-content: center;
+  }
+}
+
+.about-accent {
+  font-style: italic;
+  font-weight: 600;
+  color: #111111;
+  cursor: default;
+  transition: color 0.25s ease;
+}
+
+.about-accent:hover {
+  color: hsl(var(--fw-green-h), var(--fw-blue-s), var(--fw-green-l));
+}
+
+
+/* STATS SECTION */
+
+.about-stats {
+  padding: 110px 0;
+  background: #ffffff;
+}
+
+.about-stats-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 40px;
+
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 80px;
+}
+
+.about-stat {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+/* Icon */
+.stat-icon {
+  font-size: 34px;
+  color: #2fa4a9;
+  border: 2px solid #2fa4a9;
+  border-radius: 50%;
+  padding: 10px;
+  margin-bottom: 26px;
+}
+
+/* Title */
+.about-stat h3 {
+  font-size: 22px;
+  font-weight: 500;
+  margin-bottom: 12px;
+  color: #1c2b33;
+  line-height: 1.25;
+}
+
+/* Text */
+.about-stat p {
+  max-width: 220px;
+  margin: 0 auto;
+
+  font-size: 15px;
+  line-height: 1.6;
+  color: #6a6a6a;
+}
+
+/* Responsive */
+@media (max-width: 1000px) {
+  .about-stats-container {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 60px;
+  }
+}
+
+@media (max-width: 550px) {
+  .about-stats-container {
+    grid-template-columns: 1fr;
   }
 }

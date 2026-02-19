@@ -1,0 +1,153 @@
+.about-form {
+  position: relative;
+  background: url("../../../assets/form.png") center / cover no-repeat;
+}
+
+/* overlay */
+.about-form-overlay {
+  width: 100%;
+  padding: 80px 0;
+  background: rgba(90, 170, 175, 0.55);
+  display: flex;
+  align-items: center;
+}
+
+/* content */
+.about-form-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 40px;
+  color: #fff;
+  text-align: left;
+  position: relative;
+}
+
+.about-form-content h2 {
+    margin: 0px 0px 25px 0px;
+    font-family: "Ubuntu", Sans-serif;
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 52px;
+}
+
+/* subtitle – ONE LINE */
+.about-form-content p {
+  font-size: 15px;
+  font-family: "Ubuntu", Sans-serif;
+  line-height: 1.6;
+  margin-bottom: 10px 0px;
+  white-space: nowrap;
+}
+
+/* FORM GRID */
+.about-form-fields {
+  display: grid;
+  grid-template-columns: 320px 320px 320px;
+  gap: 24px;
+}
+
+/* field */
+.field {
+  display: flex;
+  flex-direction: column;
+}
+
+.field label {
+  margin-bottom: 6px;
+  font-size: 18px;
+  font-family: 'Jost', sans-serif;
+}
+
+.field span {
+  color: red;
+}
+
+.field input {
+  height: 25px;
+  padding: 0 12px;
+  border-radius: 4px;
+  border: none;
+  font-size: 14px;
+}
+
+/* ERROR STATE */
+.field input.error {
+  border: 2px solid #ff4d4f;
+}
+
+.field small {
+  color: #ff4d4f;
+  font-size: 12px;
+  margin-top: 6px;
+}
+
+/* SUBMIT BUTTON */
+.form-submit {
+  grid-column: 1/ -1;
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.form-submit button {
+  width: 160px;
+  height: 44px;
+  background: #35c3c9;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.form-submit button:hover {
+  background: #2aa9ae;
+}
+
+.about-form-top {
+  position: fixed;
+  right: 24px;
+  bottom: 72px;
+  top: auto;
+  transform: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 0;
+  border: none;
+  background: transparent;
+  color: #fff;
+  font-size: 15px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease, transform 0.2s ease;
+  z-index: 5;
+}
+
+.about-form-top:hover {
+  color: #000;
+  transform: scale(1.04);
+}
+
+/* MOBILE */
+@media (max-width: 900px) {
+  .about-form-content p {
+    white-space: normal;
+  }
+
+  .about-form-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .form-submit button {
+    width: 100%;
+  }
+
+  .about-form-top {
+    right: 16px;
+    bottom: 60px;
+  }
+}

@@ -13,7 +13,7 @@ const Footer = () => {
           {/* LOGO + SOCIAL */}
           <div className="footer-col">
             <div className="footer-logo">
-              <img src="/images/white-logo.png" alt="Freshwater" />
+              <img src="/images/main-logos/white-logo.png" alt="Freshwater" />
             </div>
 
             <div className="footer-socials">

@@ -1,0 +1,114 @@
+/* SECTION HEADER (reuse) */
+.section-header {
+  text-align: center;
+  margin-bottom: 60px;
+}
+
+.section-header h2 {
+  font-size: 28px;
+  font-family: 'Ubuntu', sans-serif;
+  font-weight: 600;
+  letter-spacing: 1px;
+  color: #1c2b33;
+}
+
+.section-dots {
+  margin-top: 8px;
+  font-size: 26px;
+  letter-spacing: 6px;
+  color: #2fa4a9;
+}
+
+.about-awards {
+  padding: 120px 0;
+  background: #fff;
+}
+
+.about-awards-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 30px;
+
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  flex-wrap: wrap;
+}
+
+/* CARD */
+.award-card {
+  max-width: 300px;
+  width: 300px;
+
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 50px 22px 42px;
+  text-align: center;
+
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.188);
+  transition: all 0.3s ease;
+}
+
+.award-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.12);
+}
+
+/* CIRCLE */
+.award-icon {
+  width: 150px;
+  height: 150px;
+  margin: 0 auto 30px;
+
+  background-color: #2fa4a9;
+  border: 5px solid #2fa4a9;;
+  border-radius: 50%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  transition: background-color 0.3 ease, transform 0.3s ease;
+}
+
+.award-card:hover .award-icon {
+  transform: scale(1.05);
+  background-color: #ffffff;
+}
+
+/* IMAGE */
+.award-icon img {
+max-width: 120px;
+max-height: 120px;
+transition: transform 0.3s ease, filter 0.3s ease;
+}
+
+/* YEAR */
+.award-card h3 {
+  font-family: "Ubuntu", Sans-serif;
+  font-size: 19px;
+  font-weight: 500;
+  letter-spacing: 1;
+  margin-bottom: 16px;
+  text-transform: uppercase;
+}
+
+/* TEXT */
+.award-card p {
+  color: #656565;
+  font-family: "Ubuntu", Sans-serif;
+  line-height: 1.6;
+  font-size: 14px;
+}
+
+/* RESPONSIVE */
+@media (max-width: 900px) {
+  .about-awards-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+.award-card:hover .award-icon img {
+  transform: scale(1.05);
+  filter: brightness(1.15);
+}

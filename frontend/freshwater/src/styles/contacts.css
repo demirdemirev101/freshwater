@@ -1,12 +1,16 @@
 .contact-hero {
   height: 420px;
 
+  --contact-hero-bg-image: none;
   background: linear-gradient(
       hsla(176, 85%, 38%, 0.73),
       rgba(28, 86, 137, 0.745)
     ),
-    url("/public/images/office.jpg") center / cover no-repeat;
-    font-family: "Montserrat", sans-serif;
+    var(--contact-hero-bg-image);
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  font-family: "Montserrat", sans-serif;
 
   display: flex;
   flex-direction: column;
@@ -27,6 +31,7 @@
   padding: 14px 36px;          /* по-широк и леко по-висок */
   font-size: 16px;             /* по-едър текст */
   font-weight: 500;
+  font-family: "Ubuntu", Sans-serif;
   border-radius: 6px;
   background: linear-gradient(90deg, #1e9c8b, #3dd6b5);
   color: #ffffff;              /* бял текст по подразбиране */
@@ -40,6 +45,7 @@
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
   background: linear-gradient(90deg, #25979b, #2fcfa8);
 }
+
 
 .hero-btn:hover {
   transform: scale(1.05);      /* леко уголемяване */

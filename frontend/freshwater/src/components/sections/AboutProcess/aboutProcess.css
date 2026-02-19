@@ -1,0 +1,93 @@
+.about-process {
+  padding: 60px 0;
+  background: #fff;
+}
+
+.about-process-wrap {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 30px;
+}
+
+.process-block + .process-block {
+  margin-top: 40px;
+}
+
+/* TITLE */
+.process-title {
+  text-align: center;
+  font-size: 28px;
+  font-weight: 600;
+  font-family: 'Ubuntu',sans-serif;
+}
+
+.process-dots {
+  text-align: center;
+  color: #2fa4a9;
+  font-size: 26px;
+  letter-spacing: 6px;
+  margin: 6px 0 36px;
+}
+
+/* VIEWPORT */
+.process-viewport {
+  overflow: hidden;
+  user-select: none;
+}
+
+/* TRACK */
+.process-track {
+  display: flex;
+  gap: 20px;
+  transition: transform 0.7s ease-in-out; /* ⬅️ ПЛАВНО движение */
+}
+
+/* CARD */
+.process-card {
+  flex: 0 0 280px;
+  height: 160px;
+
+  background: #ffffff;
+  border: 1px solid #eeeeee;
+  border-radius: 8px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  transition:
+    box-shadow 0.4s ease,
+    transform 0.4s ease;
+}
+
+/* HOVER – без сиво, без фон */
+.process-card:hover {
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.08);
+}
+
+/* LOGO */
+.process-card img {
+  max-width: 190px;
+  max-height: 110px;
+
+  opacity: 0.9;
+  transition:
+    opacity 0.4s ease,
+    transform 0.4s ease;
+
+  pointer-events: none;
+}
+
+.process-card:hover img {
+  opacity: 1;
+  transform: scale(1.05);
+}
+
+.process-viewport {
+  cursor: default;        /* ⬅️ мишката НЕ се сменя */
+}
+
+.process-viewport * {
+  user-select: none;      /* ⬅️ няма син selection */
+}
+

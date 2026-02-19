@@ -16,7 +16,12 @@ const ContactHero = () => {
 };
 
   return (
-    <section className="contact-hero">
+    <section
+      className="contact-hero"
+      style={{
+        "--contact-hero-bg-image": `url(${process.env.PUBLIC_URL}/images/main-logos/office.jpg)`,
+      }}
+    >
       <h1>КОНТАКТИ</h1>
 
       <button className="hero-btn" onClick={scrollToContact}>

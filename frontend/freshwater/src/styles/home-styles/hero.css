@@ -1,0 +1,226 @@
+.hero {
+  position: relative;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.hero-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+}
+
+.hero-content {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.hero-el {
+  position: absolute;
+  opacity: 0;
+  color: #fff;
+}
+
+/* BUTTON */
+.hero-btn {
+  padding: 12px 22px;
+  border-radius: 999px;
+  border: 2px solid rgba(255,255,255,0.6);
+  background: rgba(0,0,0,0.25);
+  font-weight: 700;
+  cursor: pointer;
+  z-index: 5;
+}
+
+/* DOTS */
+.hero-dots {
+  position: absolute;
+  right: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.hero-dot {
+  width: 6px;
+  height: 28px;
+  background: rgba(255,255,255,0.35);
+  border: none;
+}
+
+.hero-dot.active {
+  background: #fff;
+}
+
+/* POSITIONS */
+.el-compact {
+  left: 8%;
+  top: 24.5%;
+  width: 370px;
+}
+
+.el-compact-text {
+  left: 8.5%;
+  top: 40%;
+  font-size: 48px;
+}
+
+.bubble-1 {
+  left: 8%;
+  top: 69%;
+  width: 170px;
+}
+
+.bubble-2 {
+  left: 20%;
+  top: 69%;
+  width: 170px;
+}
+
+.bubble span {
+  opacity: 1; /* GSAP пак ще контролира, но това спира странни случаи */
+}
+
+.el-title-text {
+  left: 12%;
+  top: 42%;
+  font-size: 50px;
+}
+
+.el-title-text-big {
+  left: 12%;
+  top: 48%;
+  font-size: 50px;
+}
+
+.el-subtitle {
+  left: 12%;
+  top: 57%;
+  font-size: 22px;
+  color: rgb(1, 62, 99);
+}
+
+.el-logo {
+  left: 15%;
+  top: 22%;
+  width: 130px;
+}
+
+.el-title-uniq {
+  left: 15%;
+  top: 42%;
+  font-size: 65px;
+}
+
+.el-product {
+  position: absolute;
+  top: 36%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.el-product.uniq {
+  right: 22;
+}
+
+.el-product.uniqbox {
+  right: 4%;
+}
+
+/* ====== UNIQ SLIDE PRODUCTS (SLIDE 3) ====== */
+
+.el-uniq-products {
+  position: absolute;
+  right: 6%;
+  bottom: 8%;
+  width: min(900px, 58vw);
+  height: 70%;
+  pointer-events: none;
+}
+
+/* Всички product images */
+.el-uniq-products img {
+  position: absolute;
+  height: auto;
+  display: block;
+  max-width: 100%;
+}
+
+/* UNIQ (вляво от дясната група) */
+.uniq-uniq {
+  right: 42%;
+  bottom: 0;
+  width: 60%;
+  z-index: 2;
+}
+
+/* UNIQ BOX base (кутия) */
+.uniq-box {
+  right: 0;
+  bottom: 0;
+  width: 60%;
+  z-index: 2;
+}
+
+/* SINK layer (мивка отделно) */
+.uniq-sink {
+  left: 562px;
+  top: 155px;
+  width: 41.5%;
+  z-index: 2;
+}
+
+/* Final merged image (кутия + мивка) */
+.uniq-withSink {
+  right: 0;
+  bottom: 0;
+  width: 60%;
+  z-index: 4;
+}
+
+/* BUBBLES */
+.bubble {
+  position:absolute;
+  width: 120px;
+  height: 120px;
+  display: grid;
+  place-items: center;
+  z-index: 1;
+}
+
+.bubble img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.bubble span {
+  position: absolute;
+  width: 100%;
+  text-align: center;
+  color: #fff;
+  font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-weight: 950;
+  font-size: 36px;
+  line-height: 1.05;
+  transform: translateY(2px);
+}
+
+/* bubble positions (над съответните продукти) */
+.bubble-uniq {
+  right: 47%;
+  bottom: 70%;
+  width: 180px;
+}
+
+.bubble-uniqbox {
+  right: 0%;
+  bottom: 70%;
+  width: 180px;
+}
+

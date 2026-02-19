@@ -19,3 +19,16 @@ code {
 }
 
 @import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap");
+
+.za-doma-list-description p {
+  margin: 0 0 8px;
+}
+
+.za-doma-list-description p:last-child {
+  margin-bottom: 0;
+}
+
+.za-doma-list-description strong {
+  color: #111f32;
+  font-weight: 700;
+}
