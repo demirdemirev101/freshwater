@@ -19,6 +19,12 @@ class NotifyAdminShipmentFailedJob implements ShouldQueue
         public int $shipmentId
     ) {}
 
+    /**
+     * Sends a notification email to the administrator when a shipment fails to be created or sent to Econt. 
+     * It retrieves the shipment details using the provided shipment ID and sends an email using the AdminShipmentFailedMail mailable class,
+     *  which includes the shipment information and error details. 
+     * This job is dispatched from the SendShipmentToEcont listener when a shipment fails to be sent to Econt.
+     */
     public function handle(): void
     {
         $shipment = Shipment::with('order')->find($this->shipmentId);
