@@ -16,12 +16,31 @@ use RuntimeException;
 
 class SendShipmentToEcont implements ShouldQueue
 {
+    // Safeguard to prevent double sending of the same shipment to Econt, implemented in the handle method.
     use InteractsWithQueue;
 
+    // Set the number of attempts for retrying the job in case of failure
     public $tries = 3;
+    // Max timeout for the job execution to prevent hanging tasks
     public $timeout = 60;
-    public $backoff = [30, 60, 120]; // секунди между retry-тата
+    // Time between retries (in seconds) - can be customized based on the expected time for transient issues to resolve 
+    // For example, if Econt API is down, we might want to wait a bit before retrying to avoid hitting it too frequently
+    public $backoff = [30, 60, 120];
 
+    /*
+    * Handles the event when an order is ready for shipment and sends the shipment details to Econt.
+    * - It first checks if the shipment is in 'created' status to ensure it's ready to be sent.
+    * - It uses an atomic update to change the status to 'pending' to prevent multiple processes from sending the same shipment concurrently.
+    * - If Econt integration is disabled (e.g., in local environments), it updates the shipment status to 'confirmed' without sending and logs this action.
+    * - It prepares the payload using a mapper and sends it to Econt, then processes the response to update the shipment record accordingly.
+    * - In case of errors, it updates the shipment status to 'error' and logs the error details, allowing for retries based on the defined attempts
+    *    and backoff strategy.
+    * - If the job ultimately fails after all retries, it marks the shipment as 'error' and dispatches a notification job for the administrator.
+    * - It also dispatches a job to send a tracking email to the customer once the shipment is confirmed by Econt.
+    * Atomic guard is implemented here to prevent double sending of the same shipment, which can happen if multiple events are fired for the same order
+    *  or if the job is retried due to transient errors. By checking the status and using an atomic update, we ensure that only one process
+    *  can send the shipment to Econt.
+    */
     public function handle($event): void
     {
         $order = Order::with('shipment')->findOrFail($event->orderId);
@@ -104,7 +123,12 @@ class SendShipmentToEcont implements ShouldQueue
             throw $e;
         }
     }
-
+    /**
+     * Processes the response from Econt after sending the shipment details. It updates the shipment record with the carrier response, tracking number,
+     *  label URL, and changes the status to 'confirmed'.
+     * If the order is not cancelled, it also updates the order status to 'shipped'. It logs the successful confirmation and dispatches a job
+     *  to send a tracking email to the customer.
+     */
     private function processResponse($shipment, array $response): void
     {
         $label = $response['label'] ?? null;
@@ -124,7 +148,9 @@ class SendShipmentToEcont implements ShouldQueue
             'error_message' => null,
         ]);
 
+        // Зареждаме отново shipment-а с order данните за по-нататъшна обработка
         $shipment->loadMissing('order');
+
         if ($shipment->order && $shipment->order->status !== 'cancelled') {
             $shipment->order->update([
                 'status' => 'shipped',
@@ -141,6 +167,13 @@ class SendShipmentToEcont implements ShouldQueue
         dispatch(new SendTrackingEmailJob($shipment->id));
     }
 
+    /**
+     * Handles errors that occur during the shipment creation process. It updates the shipment status to 'error' and logs the error details,
+     *  including the attempt count. The error message is stored in the shipment record for later reference, and the method allows for retries 
+     *  based on the defined attempts and backoff strategy in the job configuration. This centralized error handling ensures that 
+     *  any issues during the Econt integration are properly logged and the shipment status is updated accordingly,
+     *  allowing for monitoring and manual intervention if needed after multiple failed attempts.
+     */
     private function handleError($shipment, \Exception $e): void
     {
         $errorMessage = $e->getMessage();
@@ -160,7 +193,10 @@ class SendShipmentToEcont implements ShouldQueue
     }
 
     /**
-     * Handle job failure
+     * Handle job failure after all retry attempts have been exhausted.
+     * It updates the shipment status to 'error' and logs the critical failure, including the error message.
+     * It also dispatches a notification job to alert the administrator about the shipment failure, allowing for timely intervention to resolve the issue.
+     *  This method ensures that even in cases of persistent failures, the system is aware of the problem and can take appropriate action.
      */
     public function failed($event, \Throwable $exception): void
     {
