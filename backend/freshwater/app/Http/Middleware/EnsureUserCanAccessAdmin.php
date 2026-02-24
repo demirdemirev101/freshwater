@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Auth;
 class EnsureUserCanAccessAdmin
 {
     /**
-     * Handle an incoming request.
+     * Handle an incoming request, ensuring the user has the appropriate role to access admin routes.
      *
      * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
      */
@@ -17,12 +17,12 @@ class EnsureUserCanAccessAdmin
     {
         $user = Auth::user();
 
-        // още няма логнат user → оставяме Filament да покаже login
+        //there is no logged in user, let the auth middleware handle it
         if (! $user) {
             return $next($request);
         }
 
-        // логнат е, но няма право
+        // the user is logged in but does not have the required role, abort with 403
         if (! $user->hasAnyRole(['admin', 'superadmin'])) {
             abort(403);
         }

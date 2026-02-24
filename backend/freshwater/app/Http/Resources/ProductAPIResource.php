@@ -8,17 +8,12 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class ProductAPIResource extends JsonResource
 {
     /**
-     * Transform the resource into an array.
+     * Transform the resource into an array, ready for JSON serialization.
      *
      * @return array<string, mixed>
      */
     public function toArray(Request $request): array
     {
-        /*  
-            $shortDescriptionHtml = $this->short_description;
-            $descriptionHTML= $this->description;
-            $extraInformation = $this->extra_information;
-        */
         return [
             'id' => $this->id,
             'name' => $this->name,
@@ -42,17 +37,4 @@ class ProductAPIResource extends JsonResource
             }),
         ];  
     }
-
-    /*private function toPlainText(?string $html): ?string
-    {
-        if ($html === null) {
-            return null;
-        }
-
-        $text = html_entity_decode($html, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-        $text = strip_tags($text);
-        $text = preg_replace('/\s+/u', ' ', $text);
-
-        return trim((string) $text);
-    }*/
 }

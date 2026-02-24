@@ -9,10 +9,15 @@ use Illuminate\Http\Request;
 
 class CheckoutController extends Controller
 {
-    public function store(
-        Request $request,
-        OrderService $orderService
-    ) {
+    /**
+     * Process the checkout by validating the request data and creating an order using the OrderService.
+      * @param \Illuminate\Http\Request $request
+      * @param \App\Services\OrderService $orderService
+      * @return \Illuminate\Http\JsonResponse
+      * @throws \App\Exceptions\CheckoutException
+     */
+    public function store(Request $request, OrderService $orderService) 
+    {
         $validated = $request->validate([
             'customer_name'     => 'required|string',
             'customer_email'    => 'required|email',
@@ -20,13 +25,9 @@ class CheckoutController extends Controller
             'shipping_address'  => 'required|string',
             'shipping_city'     => 'required|string',
             'shipping_postcode' => 'nullable|string',
-            'holiday_delivery_day' => 'nullable|date_format:Y-m-d',
             'payment_method'    => 'required|string',
             'notes'             => 'nullable|string',
         ]);
-        if (!isset($validated['holiday_delivery_day'])) {
-            $validated['holiday_delivery_day'] = $request->input('holidayDeliveryDay');
-        }
 
         try {
             $order = $orderService->create($validated);

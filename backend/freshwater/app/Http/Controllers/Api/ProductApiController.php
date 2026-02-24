@@ -9,6 +9,11 @@ use Illuminate\Http\Request;
 
 class ProductApiController extends Controller
 {
+    /**
+     * Display a listing of the products, including their categories and images as a JSON resource collection.
+      *
+      * @return \Illuminate\Http\Resources\Json\AnonymousResourceCollection
+     */
     public function index()
     {
         $products = Product::with([
