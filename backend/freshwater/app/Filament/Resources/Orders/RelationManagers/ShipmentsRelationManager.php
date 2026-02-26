@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Orders\RelationManagers;
 
+use App\Enums\OrderStatus;
 use Carbon\Carbon;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Table;
@@ -21,6 +22,13 @@ class ShipmentsRelationManager extends RelationManager
     public function refreshFromOrderUpdate(): void
     {
         $this->getOwnerRecord()?->refresh();
+
+        // важно: typed property може още да не е инициализирана
+        if (! isset($this->table)) {
+            return;
+        }
+
+        $this->resetTable();
     }
 
     public function table(Table $table): Table
@@ -46,11 +54,11 @@ class ShipmentsRelationManager extends RelationManager
                     ->label('Статус')
                     ->colors([
                         'primary' => ['picked_up', 'in_transit'],
-                        'secondary' => 'created',
-                        'warning' => 'pending',
+                        'secondary' => ['created', 'returned'],
+                        'warning' => ['pending', 'returning'],
                         'info' => 'confirmed',
                         'success' => 'delivered',
-                        'danger' => 'error',
+                        'danger' => ['error', 'cancelled'],
                     ])
                     ->formatStateUsing(fn ($state) => match($state) {
                         'created' => 'Създаден',
@@ -60,6 +68,9 @@ class ShipmentsRelationManager extends RelationManager
                         'in_transit' => 'В транспорт',
                         'delivered' => 'Доставен',
                         'error' => 'Грешка',
+                        'returning' => 'Returning to sender',
+                        'returned' => 'Returned to sender',
+                        'cancelled' => 'Cancelled',
                         default => $state,
                     }),
 
@@ -108,8 +119,8 @@ class ShipmentsRelationManager extends RelationManager
                     ->color('success')
                     ->url(fn ($record) => $record->label_url)
                     ->openUrlInNewTab()
-                    ->visible(fn () => $this->getOwnerRecord()->status !== 'cancelled')
-                    ->authorize(fn ($record) => !empty($record->label_url) && Auth::user()->can('view shipments')),
+                    ->authorize(fn ($record) => !empty($record->label_url) 
+                    && $record->status !== 'cancelled' && Auth::user()->can('view shipments')),
             ])
             ->emptyStateHeading('Няма доставка')
             ->emptyStateIcon('heroicon-o-truck');
@@ -117,7 +128,7 @@ class ShipmentsRelationManager extends RelationManager
 
     public static function canViewForRecord(Model $ownerRecord, string $pageClass): bool
     {
-        if ($ownerRecord->status === 'cancelled') {
+        if ($ownerRecord->status === OrderStatus::CANCELLED->value) {
             return false;
         }
 

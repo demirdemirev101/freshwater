@@ -8,9 +8,13 @@ use App\Events\OrderReadyForShipment;
 use App\Filament\Resources\Orders\OrderResource;
 use App\Mail\OrderCancelledMail;
 use App\Mail\OrderReturnRequestedMail;
+use App\Policies\CancelOrderPolicy;
+use App\Policies\ConfirmBankTransferPolicy;
+use App\Policies\IsOrderLockedPolicy;
 use App\Policies\ShipmentPollingPolicy;
 use App\Services\Econt\EcontService;
-use App\Services\Shipments\ShipmentTrackingSyncService;
+use App\Services\Shipment\ShipmentCancellationService;
+use App\Services\Shipment\ShipmentTrackingSyncService;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
@@ -19,19 +23,6 @@ use Illuminate\Support\Facades\Log;
 
 class EditOrder extends EditRecord
 {
-    // Statuses that allow cancelling the order. If the order is in a later status, it means it has been shipped and cannot be cancelled, only returned.
-    private const CANCELLABLE_STATUSES = [
-        OrderStatus::PENDING->value,
-        OrderStatus::PENDING_REVIEW->value,
-        OrderStatus::PROCESSING->value,
-    ];
-    // Statuses that allow requesting a return. If the order is in a later status, it means it has been delivered and cannot be returned, only refunded.
-    private const RETURN_REQUESTABLE_STATUSES = [
-        OrderStatus::READY_FOR_SHIPMENT->value,
-        OrderStatus::SHIPPED->value,
-        OrderStatus::IN_TRANSIT->value,
-    ];
-
     protected static string $resource = OrderResource::class;
     protected string $view = 'filament.resources.orders.pages.edit-order';
 
@@ -54,20 +45,6 @@ class EditOrder extends EditRecord
         $this->handleOrderRefresh();
         $this->dispatch('$refresh');
         $this->dispatch('orderUpdated');
-    }
-    /**
-     * Determines if the "Confirm Bank Transfer" action should be visible. This action is only relevant for orders that are paid via bank transfer
-     *  and are not yet marked as paid and are in a status that indicates they are still being processed (pending, pending review, or processing).
-     */
-    private function canConfirmBankTransfer(): bool
-    {
-        return $this->record->payment_method === 'bank_transfer'
-            && $this->record->payment_status !== PaymentStatus::PAID->value
-            && in_array($this->record->status, [
-                OrderStatus::PENDING->value,
-                OrderStatus::PENDING_REVIEW->value,
-                OrderStatus::PROCESSING->value,
-            ], true);
     }
 
     /**
@@ -108,78 +85,6 @@ class EditOrder extends EditRecord
         }
     }
 
-    /**
-     * Clears the shipment data for a cancelled order. This is called when an order is cancelled and has an associated shipment with a carrier shipment ID.
-     *  It attempts to cancel the label in Econt, and if successful (or if Econt is disabled), it clears the shipment data locally to prevent further processing
-     *  or polling of the shipment.
-     */
-    private function clearShipmentDataForCancelledOrder(object $shipment, array $extra = []): void
-    {
-        $shipment->update(array_merge([
-            'status' => 'cancelled',
-            'label_url' => null,
-            'carrier_payload' => null,
-            'carrier_response' => null,
-            'tracking_number' => null,
-            'carrier_shipment_id' => null,
-        ], $extra));
-    }
-    
-    /**
-     * Determines if the current order is locked. An order is considered locked if it is not in a status that allows editing
-     *  (pending review or bank transfer that is not paid).
-     */
-    private function isLocked(): bool
-    {
-        $record = $this->record;
-
-        if (! $record) {
-            return true;
-        }
-
-        return ! ($record->status === 'pending_review'
-            || ($record->payment_method === 'bank_transfer' && $record->payment_status !== 'paid'));
-    }
-
-    /**
-     * Determines if the "Cancel Order" action should be visible. This action is only relevant for orders that are in a status that allows cancellation
-     *  (pending, pending review, or processing) and do not have a return request, as it doesn't make sense to allow cancelling an order
-     *  that has already been requested for return.
-     */
-    private function canCancelOrder(): bool
-    {
-        $record = $this->record;
-
-        if (! $record) {
-            return false;
-        }
-
-        if ($this->canRequestReturn()) {
-            return false;
-        }
-
-        return in_array($record->status, self::CANCELLABLE_STATUSES, true);
-    }
-
-    /**
-     * Determines if the "Request Return" action should be visible. This action is only relevant for orders that are in a status that allows return requests
-     *  (ready for shipment, shipped, or in transit) and are not already cancelled, return requested, returned, or completed, 
-     * as it doesn't make sense to allow requesting a return for an order that is already in a final state or has a return request.
-     */
-    private function canRequestReturn(): bool
-    {
-        $record = $this->getRecord()->fresh(['shipment']);
-
-        if (! $record) {
-            return false;
-        }
-
-        if (! in_array($record->status, self::RETURN_REQUESTABLE_STATUSES, true)) {
-            return false;
-        }
-
-        return ! in_array($record->status, ['cancelled', 'return_requested', 'returned', 'completed'], true);
-    }
     /**
      * Defines the header actions for the order edit page. This includes actions for confirming cash on delivery orders, confirming bank transfers,
      *  cancelling orders, and requesting returns. Each action has specific visibility conditions based on the order's payment method, payment status
@@ -225,7 +130,7 @@ class EditOrder extends EditRecord
                 ->label('Потвърди банков превод')
                 ->icon('heroicon-o-check-circle')
                 ->color('primary')
-                ->visible(fn () => $this->canConfirmBankTransfer())
+                ->visible(fn () => app(ConfirmBankTransferPolicy::class)->canConfirmBankTransfer($this->record))
                 ->requiresConfirmation()
                 ->modalHeading('Потвърждаване на плащане')
                 ->modalDescription('Сигурни ли сте, че плащането е постъпило? Пратката ще се изпрати към Еконт.')
@@ -252,7 +157,7 @@ class EditOrder extends EditRecord
                 ->label('Откажи поръчка')
                 ->icon('heroicon-o-x-circle')
                 ->color('danger')
-                ->visible(fn () => $this->canCancelOrder())
+                ->visible(fn () => app(CancelOrderPolicy::class)->canCancelOrder($this->record))
                 ->requiresConfirmation()
                 ->modalHeading('Отказ на поръчка')
                 ->modalDescription('Сигурни ли сте, че искате да откажете поръчката?')
@@ -272,7 +177,7 @@ class EditOrder extends EditRecord
                                     'carrier_shipment_id' => $shipment->carrier_shipment_id,
                                     'response' => $deleteResponse,
                                 ]);
-                                $this->clearShipmentDataForCancelledOrder($shipment);
+                                app(ShipmentCancellationService::class)->clearCancelledShipmentData($shipment);
                             } catch (\Throwable $e) {
                                 Log::error('Econt delete label failed', [
                                     'order_id' => $this->record->id,
@@ -287,12 +192,12 @@ class EditOrder extends EditRecord
                                     ->send();
                             }
                         } else {
-                            $this->clearShipmentDataForCancelledOrder($shipment, [
+                           app(ShipmentCancellationService::class)->clearCancelledShipmentData($shipment, [
                                 'error_message' => 'Econt disabled (local environment)',
                             ]);
                         }
                     } elseif ($shipment) {
-                        $this->clearShipmentDataForCancelledOrder($shipment);
+                        app(ShipmentCancellationService::class)->clearCancelledShipmentData($shipment);
                     }
 
                     if ($this->record->customer_email) {
@@ -314,7 +219,7 @@ class EditOrder extends EditRecord
                 ->label('Заяви връщане')
                 ->icon('heroicon-o-arrow-uturn-left')
                 ->color('warning')
-                ->visible(fn () => $this->canRequestReturn())
+                ->visible(fn () => app(CancelOrderPolicy::class)->canRequestReturn($this->record))
                 ->requiresConfirmation()
                 ->modalHeading('Заявка за връщане')
                 ->modalDescription('Сигурни ли сте, че искате да заявите връщане на поръчката?')
@@ -344,7 +249,7 @@ class EditOrder extends EditRecord
      */
     protected function getFormActions(): array
     {
-        if ($this->isLocked()) {
+        if ($this->record && app(IsOrderLockedPolicy::class)->isLocked($this->record)) {
             return [];
         }
 
