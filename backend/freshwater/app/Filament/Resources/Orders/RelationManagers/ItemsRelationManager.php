@@ -2,6 +2,10 @@
 
 namespace App\Filament\Resources\Orders\RelationManagers;
 
+use App\Enums\OrderStatus;
+use App\Enums\PaymentMethod;
+use App\Enums\PaymentStatus;
+use App\Models\Order;
 use App\Models\OrderItem;
 use App\Services\OrderItemService;
 use Filament\Actions\CreateAction;
@@ -14,13 +18,25 @@ use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Livewire\Attributes\On;
 
 class ItemsRelationManager extends RelationManager
 {
     protected static string $relationship = 'items';
     protected static ?string $title = 'Поръчани артикули';
-    protected static ?string $modelLabel = 'артикул';
+    protected static ?string $modelLabel = 'Артикул';
     protected static ?string $pluralModelLabel = 'Поръчани артикули';
+
+   
+    /* 
+    * This method is used to determine if the order is locked for editing items. 
+    * An order is considered locked if its status is not 'pending_review' or if it's a bank transfer
+    */
+    #[On('orderUpdated')]
+    public function refreshFromOrderUpdate(): void
+    {
+        $this->getOwnerRecord()?->refresh();
+    }
 
     private function isLocked(): bool
     {
@@ -30,8 +46,8 @@ class ItemsRelationManager extends RelationManager
             return true;
         }
 
-        return ! ($order->status === 'pending_review'
-            || ($order->payment_method === 'bank_transfer' && $order->payment_status !== 'paid'));
+        return ! ($order->status === OrderStatus::PENDING_REVIEW->value 
+        || ($order->payment_method === 'bank_transfer' && $order->payment_status !== PaymentStatus::PAID->value));
     }
 
     public function form(Schema $schema): Schema
@@ -88,7 +104,11 @@ class ItemsRelationManager extends RelationManager
                 //
             ])
             ->headerActions([
-                CreateAction::make()
+                /* 
+                * The CreateAction is customized to use the OrderItemService for creating new order items
+                * and it dispatches an 'orderUpdated' event after creation to allow the parent order page to refresh its data.
+                */
+                 CreateAction::make()
                     ->using(function (array $data) {
                         return app(OrderItemService::class)->create([
                             'order_id' => $this->ownerRecord->id,
@@ -102,6 +122,11 @@ class ItemsRelationManager extends RelationManager
                     ->visible(fn () => ! $this->isLocked()),
             ])
             ->recordActions([
+                /*
+                * The EditAction is customized to use the OrderItemService for updating existing order items. 
+                * It updates the quantity of the order item and dispatches an 'orderUpdated' event after the update.
+                * The DeleteAction is also customized to use the OrderItemService for deleting order items and dispatching the same event after deletion.
+                */
                 EditAction::make()
                     ->using(function (OrderItem $record, array $data) {
                         return app(OrderItemService::class)->update($record, [
@@ -118,6 +143,11 @@ class ItemsRelationManager extends RelationManager
                     ->visible(fn () => ! $this->isLocked()),
             ])
             ->toolbarActions([
+                /**
+                 * The DeleteBulkAction is customized to use the OrderItemService for deleting multiple order items at once.
+                 * It iterates through the selected records and deletes each one using the service, then dispatches an 'orderUpdated' 
+                 * event after the bulk deletion to refresh the parent order page data.
+                 */
                 DeleteBulkAction::make()
                     ->action(function ($records) {
                         $service = app(OrderItemService::class);

@@ -2,66 +2,89 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Services\CartService;
 use Illuminate\Http\Request;
 
 class CartController extends Controller
 {
-    public function index(CartService $cart)
+    private CartService $cart;
+
+    // Ensure the cart service is available for all methods in this controller
+    public function __construct(CartService $cart)
+    {
+        $this->cart = $cart;
+    }
+
+    /**
+     * Helper method to return the current cart contents and subtotal as a JSON response.
+     */
+    private function cartResponse()
     {
         return response()->json([
-            'items' => $cart->items(),
-            'subtotal' => $cart->subtotal(),
+            'items' => $this->cart->items(),
+            'subtotal' => $this->cart->subtotal(),
         ]);
     }
 
-    public function add(Request $request, CartService $cart)
+    /**
+     * Display the current contents of the cart, including items and subtotal.
+      *
+      * @return \Illuminate\Http\JsonResponse
+     */
+    public function show()
     {
-        $request->validate([
-            'product_id' => 'required|exists:products,id',
+        return $this->cartResponse();
+    }
+
+    /**
+     * Add a product to the cart with an optional quantity (defaulting to 1 if not provided).
+     */
+    public function store(Request $request, Product $product)
+    {
+        $validated = $request->validate([
             'quantity'   => 'nullable|integer|min:1',
         ]);
+        
+        $quantity = (int)($validated['quantity']);
+        
+        $this->cart->add($product, $quantity);
 
-        $product = Product::findOrFail($request->product_id);
-        $cart->add($product, $request->quantity ?? 1);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Product added to cart',
-        ]);
+        return $this->cartResponse();
     }
 
-    public function update(Request $request, CartService $cart)
+    /**
+     * Update the quantity of a specific product in the cart, or remove it if the quantity is set to zero.
+     */
+    public function update(Request $request, Product $product)
     {
-        $request->validate([
-            'product_id' => 'required|exists:products,id',
+        $validated = $request->validate([
             'quantity'   => 'required|integer|min:0',
         ]);
 
-        $product = Product::findOrFail($request->product_id);
-        $cart->update($product, $request->quantity);
+        $quantity = (int)($validated['quantity']);
 
-        return response()->json(['success' => true]);
+        $this->cart->update($product, $quantity);
+
+        return $this->cartResponse();
     }
 
-    public function remove(Request $request, CartService $cart)
+    /**
+     * Remove a specific product from the cart entirely.
+     */
+    public function remove(Product $product)
     {
-        $request->validate([
-            'product_id' => 'required|exists:products,id',
-        ]);
+        $this->cart->remove($product);
 
-        $product = Product::findOrFail($request->product_id);
-        $cart->remove($product);
-
-        return response()->json(['success' => true]);
+        return $this->cartResponse();
     }
 
-    public function clear(CartService $cart)
+    /**
+     * Clear all items from the cart, resetting it to an empty state.
+     */
+    public function clear()
     {
-        $cart->clear();
-
-        return response()->json(['success' => true]);
+        $this->cart->clear();
+        return response()->noContent();
     }
 }

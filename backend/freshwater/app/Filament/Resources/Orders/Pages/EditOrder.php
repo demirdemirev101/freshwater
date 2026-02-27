@@ -2,11 +2,19 @@
 
 namespace App\Filament\Resources\Orders\Pages;
 
+use App\Enums\OrderStatus;
+use App\Enums\PaymentStatus;
 use App\Events\OrderReadyForShipment;
 use App\Filament\Resources\Orders\OrderResource;
 use App\Mail\OrderCancelledMail;
 use App\Mail\OrderReturnRequestedMail;
+use App\Policies\CancelOrderPolicy;
+use App\Policies\ConfirmBankTransferPolicy;
+use App\Policies\IsOrderLockedPolicy;
+use App\Policies\ShipmentPollingPolicy;
 use App\Services\Econt\EcontService;
+use App\Services\Shipment\ShipmentCancellationService;
+use App\Services\Shipment\ShipmentTrackingSyncService;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
@@ -18,144 +26,30 @@ class EditOrder extends EditRecord
     protected static string $resource = OrderResource::class;
     protected string $view = 'filament.resources.orders.pages.edit-order';
 
+    /*
+     * Refreshes the order data from the database and updates the form. This is useful after performing actions that change the order status or
+     *  shipment information, to ensure the UI reflects the latest state.
+     */
     public function handleOrderRefresh(): void
     {
         $this->getRecord()->refresh();
 
         $this->fillForm();
     }
-
+    /**
+     * Refreshes the order data and dispatches a UI refresh. This is used after actions that change the order or shipment status,
+     *  to ensure the UI is up to date.
+     */
     private function refreshUi(): void
     {
         $this->handleOrderRefresh();
         $this->dispatch('$refresh');
+        $this->dispatch('orderUpdated');
     }
 
-    public function pollShipmentStatus(): void
-    {
-        if (property_exists($this, 'mountedActions') && ! empty($this->mountedActions)) {
-            return;
-        }
-
-        $record = $this->getRecord()->fresh(['shipment']);
-
-        if (! $record) {
-            return;
-        }
-
-        if (in_array($record->status, ['completed', 'cancelled', 'returned'], true)) {
-            return;
-        }
-
-        $shipment = $record->shipment;
-
-        if (! $shipment) {
-            return;
-        }
-
-        if (empty($shipment->carrier_shipment_id)) {
-            return;
-        }
-
-        if (! config('services.econt.enabled')) {
-            return;
-        }
-
-        try {
-            $response = app(EcontService::class)->trackShipment($shipment->carrier_shipment_id);
-            $result = $response['shipmentStatuses'][0] ?? null;
-
-            if (! is_array($result)) {
-                return;
-            }
-
-            if (! empty($result['error'])) {
-                Log::warning('Econt tracking error', [
-                    'order_id' => $record->id,
-                    'shipment_id' => $shipment->id,
-                    'error' => $result['error'],
-                ]);
-                return;
-            }
-
-            $status = $result['status'] ?? null;
-
-            if (! is_array($status)) {
-                return;
-            }
-
-            $carrierResponse = $shipment->carrier_response;
-            $carrierResponse = is_array($carrierResponse) ? $carrierResponse : [];
-            $carrierResponse['tracking'] = $response;
-
-            $updates = [
-                'carrier_response' => $carrierResponse,
-            ];
-
-            $shortStatus = $status['shortDeliveryStatus'] ?? $status['shortDeliveryStatusEn'] ?? null;
-            $trackingEvents = $status['trackingEvents'] ?? [];
-
-            $delivered = ! empty($status['deliveryTime'])
-                || in_array($shortStatus, ['Доставена', 'Delivered'], true);
-
-            $inTransit = ! $delivered && (
-                ! empty($trackingEvents)
-                || in_array($shortStatus, [
-                    'Приета в Еконт',
-                    'Пътува по линия',
-                    'В куриер',
-                    'В офис',
-                    'В офис на приемащ куриер',
-                    'Приета в офис в офис на предаващ куриер',
-                    'Пристигнала в офис',
-                    'Постъпила за обработка в Логистичен център',
-                    'Prepared in eEcont',
-                    'Accepted in Econt',
-                    'In route',
-                    'In courier',
-                    'In pick up courier',
-                    'Accepted in office',
-                    'In delivery courier\'s office',
-                    'Arrived in office',
-                    'Arrival departure from hub',
-                ], true)
-            );
-
-            if ($delivered) {
-                $updates['status'] = 'delivered';
-            } elseif ($inTransit && $shipment->status !== 'delivered') {
-                $updates['status'] = 'in_transit';
-            }
-
-            $shipment->fill($updates);
-            $shipmentChanged = $shipment->isDirty();
-
-            if ($shipmentChanged) {
-                $shipment->save();
-            }
-
-            $orderChanged = false;
-
-            if ($delivered && $record->status !== 'completed') {
-                $record->update(['status' => 'completed']);
-                $orderChanged = true;
-            } elseif ($inTransit && $record->status !== 'shipped' && $record->status !== 'completed') {
-                $record->update(['status' => 'shipped']);
-                $orderChanged = true;
-            }
-
-            if ($shipmentChanged || $orderChanged) {
-                $this->refreshUi();
-            }
-        } catch (\Throwable $e) {
-            Log::error('Econt tracking failed', [
-                'order_id' => $record->id,
-                'shipment_id' => $shipment->id,
-                'error' => $e->getMessage(),
-            ]);
-        }
-    }
-
+    /**
+     * Determines whether or not to continue polling the shipment status from Econt. This is based on the current order status and shipment information.
+     */
     public function shouldPollShipmentStatus(): bool
     {
         $record = $this->getRecord()->fresh(['shipment']);
@@ -164,58 +58,46 @@ class EditOrder extends EditRecord
             return false;
         }
 
-        if (in_array($record->status, ['completed', 'cancelled', 'returned'], true)) {
-            return false;
-        }
-
-        return ! empty($record->shipment?->carrier_shipment_id);
+        return app(ShipmentPollingPolicy::class)->shouldPollShipmentStatus($record);
     }
 
-    private function isLocked(): bool
+    /**
+     * Getting fresh instance of the shipment from the econt api and updating the shipment and order status accordingly. This method is called
+     *  when the "Poll Shipment Status" action is triggered and it uses the ShipmentTrackingSyncService to perform the synchronization.
+     *  If the shipment status has changed, it refreshes the UI to reflect the latest information.
+     */
+    public function pollShipmentStatus(): void
     {
-        $record = $this->record;
+        if (property_exists($this, 'mountedActions') && ! empty($this->mountedActions)) {
+            return;
+        }
+
+        $record = $this->getRecord();
 
         if (! $record) {
-            return true;
+            return;
         }
 
-        return ! ($record->status === 'pending_review'
-            || ($record->payment_method === 'bank_transfer' && $record->payment_status !== 'paid'));
+        $changed = app(ShipmentTrackingSyncService::class)->syncShipmentTracking($record);
+
+        if ($changed) {
+            $this->refreshUi();
+        }
     }
 
-    private function canCancelOrder(): bool
-    {
-        $record = $this->record;
-
-        if (! $record) {
-            return false;
-        }
-
-        if ($this->canRequestReturn()) {
-            return false;
-        }
-
-        return in_array($record->status, ['pending', 'pending_review', 'processing'], true);
-    }
-
-    private function canRequestReturn(): bool
-    {
-        $record = $this->getRecord()->fresh(['shipment']);
-
-        if (! $record) {
-            return false;
-        }
-
-        if (! in_array($record->status, ['ready_for_shipment', 'shipped'], true)) {
-            return false;
-        }
-
-        return ! in_array($record->status, ['cancelled', 'return_requested', 'returned'], true);
-    }
-
+    /**
+     * Defines the header actions for the order edit page. This includes actions for confirming cash on delivery orders, confirming bank transfers,
+     *  cancelling orders, and requesting returns. Each action has specific visibility conditions based on the order's payment method, payment status
+     *  and order status, to ensure that only relevant actions are shown to the admin user. The actions also include confirmation modals to prevent
+     *  accidental clicks and they perform the necessary updates to the order and shipment records,
+     *  as well as sending notifications and emails to the customer when appropriate.
+     */
     protected function getHeaderActions(): array
     {
         return [
+            // The "Confirm COD" action is visible for orders that are paid via cash on delivery and are in the "pending review" status.
+            // When confirmed, it updates the order status to "ready for shipment", triggers the OrderReadyForShipment event and sends a notification
+            //  to the admin user confirming that the order has been confirmed and will be sent to Econt.
             Action::make('confirm_cod')
                 ->label('Потвърди поръчка (наложен платеж)')
                 ->icon('heroicon-o-check-circle')
@@ -227,7 +109,7 @@ class EditOrder extends EditRecord
                 ->modalDescription('Сигурни ли сте, че поръчката е потвърдена? Пратката ще се изпрати към Еконт.')
                 ->action(function () {
                     $this->record->updateQuietly([
-                        'status' => 'ready_for_shipment',
+                        'status' => OrderStatus::READY_FOR_SHIPMENT->value,
                     ]);
 
                     event(new OrderReadyForShipment($this->record->id));
@@ -240,19 +122,22 @@ class EditOrder extends EditRecord
 
                     $this->refreshUi();
                 }),
+            // The "Confirm Bank Transfer" action is visible for orders that are paid via bank transfer, are not yet marked as paid
+            //  and are in a status that indicates they are still being processed. When confirmed, it updates the order's payment status to "paid"
+            //  and the order status to "ready for shipment", triggers the OrderReadyForShipment event and sends a notification to the admin user
+            //  confirming that the payment has been confirmed and the order will be sent to Econt.
             Action::make('confirm_bank_transfer')
                 ->label('Потвърди банков превод')
                 ->icon('heroicon-o-check-circle')
                 ->color('primary')
-                ->visible(fn () => $this->record->payment_method === 'bank_transfer'
-                    && $this->record->payment_status !== 'paid')
+                ->visible(fn () => app(ConfirmBankTransferPolicy::class)->canConfirmBankTransfer($this->record))
                 ->requiresConfirmation()
                 ->modalHeading('Потвърждаване на плащане')
                 ->modalDescription('Сигурни ли сте, че плащането е постъпило? Пратката ще се изпрати към Еконт.')
                 ->action(function () {
                     $this->record->updateQuietly([
-                        'payment_status' => 'paid',
-                        'status' => 'ready_for_shipment',
+                        'payment_status' => PaymentStatus::PAID->value,
+                        'status' => OrderStatus::READY_FOR_SHIPMENT->value,
                     ]);
 
                     event(new OrderReadyForShipment($this->record->id));
@@ -265,17 +150,20 @@ class EditOrder extends EditRecord
 
                     $this->refreshUi();
                 }),
+            // The "Cancel Order" action is visible for orders that are in a status that allows cancellation and do not have a return request. When confirmed, it updates the order status to "cancelled",
+            //  attempts to cancel the label in Econt if there is an associated shipment with a carrier shipment ID, clears the shipment data locally, sends an order cancellation email to the customer
+            //  and a notification to the admin user confirming that the order has been cancelled.
             Action::make('cancel_order')
                 ->label('Откажи поръчка')
                 ->icon('heroicon-o-x-circle')
                 ->color('danger')
-                ->visible(fn () => $this->canCancelOrder())
+                ->visible(fn () => app(CancelOrderPolicy::class)->canCancelOrder($this->record))
                 ->requiresConfirmation()
                 ->modalHeading('Отказ на поръчка')
                 ->modalDescription('Сигурни ли сте, че искате да откажете поръчката?')
                 ->action(function () {
                     $this->record->updateQuietly([
-                        'status' => 'cancelled',
+                        'status' => OrderStatus::CANCELLED->value,
                     ]);
 
                     $shipment = $this->record->shipment;
@@ -289,14 +177,7 @@ class EditOrder extends EditRecord
                                     'carrier_shipment_id' => $shipment->carrier_shipment_id,
                                     'response' => $deleteResponse,
                                 ]);
-                                $shipment->update([
-                                    'status' => 'cancelled',
-                                    'label_url' => null,
-                                    'carrier_payload' => null,
-                                    'carrier_response' => null,
-                                    'tracking_number' => null,
-                                    'carrier_shipment_id' => null,
-                                ]);
+                                app(ShipmentCancellationService::class)->clearCancelledShipmentData($shipment);
                             } catch (\Throwable $e) {
                                 Log::error('Econt delete label failed', [
                                     'order_id' => $this->record->id,
@@ -311,24 +192,12 @@ class EditOrder extends EditRecord
                                     ->send();
                             }
                         } else {
-                            $shipment->update([
-                                'status' => 'cancelled',
-                                'label_url' => null,
-                                'carrier_payload' => null,
-                                    'carrier_response' => null,
-                                'tracking_number' => null,
-                                'carrier_shipment_id' => null,
+                           app(ShipmentCancellationService::class)->clearCancelledShipmentData($shipment, [
                                 'error_message' => 'Econt disabled (local environment)',
                             ]);
                         }
                     } elseif ($shipment) {
-                        $shipment->update([
-                            'status' => 'cancelled',
-                            'carrier_payload' => null,
-                                    'carrier_response' => null,
-                            'tracking_number' => null,
-                            'carrier_shipment_id' => null,
-                        ]);
+                        app(ShipmentCancellationService::class)->clearCancelledShipmentData($shipment);
                     }
 
                     if ($this->record->customer_email) {
@@ -343,17 +212,20 @@ class EditOrder extends EditRecord
 
                     $this->refreshUi();
                 }),
+            // The "Request Return" action is visible for orders that are in a status that allows return requests and are not already cancelled,
+            //  return requested, returned, or completed. When confirmed, it updates the order status to "return_requested",
+            //  sends an order return requested email to the customer and a notification to the admin user confirming that the return has been requested.
             Action::make('request_return')
                 ->label('Заяви връщане')
                 ->icon('heroicon-o-arrow-uturn-left')
                 ->color('warning')
-                ->visible(fn () => $this->canRequestReturn())
+                ->visible(fn () => app(CancelOrderPolicy::class)->canRequestReturn($this->record))
                 ->requiresConfirmation()
                 ->modalHeading('Заявка за връщане')
                 ->modalDescription('Сигурни ли сте, че искате да заявите връщане на поръчката?')
                 ->action(function () {
                     $this->record->updateQuietly([
-                        'status' => 'return_requested',
+                        'status' => OrderStatus::RETURN_REQUESTED->value,
                     ]);
 
                     if ($this->record->customer_email) {
@@ -370,10 +242,14 @@ class EditOrder extends EditRecord
                 }),
         ];
     }
-
+    /**
+     * Overrides the default form actions to conditionally hide them based on the order status and payment method.
+     *  If the order is locked (not in a status that allows editing), the form actions will be hidden to prevent any edits.
+     *  This ensures that only relevant actions are available to the admin user based on the current state of the order.
+     */
     protected function getFormActions(): array
     {
-        if ($this->isLocked()) {
+        if ($this->record && app(IsOrderLockedPolicy::class)->isLocked($this->record)) {
             return [];
         }
 

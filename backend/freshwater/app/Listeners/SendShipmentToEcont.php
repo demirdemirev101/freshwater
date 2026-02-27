@@ -124,9 +124,8 @@ class SendShipmentToEcont implements ShouldQueue
         }
     }
     /**
-     * Processes the response from Econt after sending the shipment details. It updates the shipment record with the carrier response, tracking number,
-     *  label URL, and changes the status to 'confirmed'.
-     * If the order is not cancelled, it also updates the order status to 'shipped'. It logs the successful confirmation and dispatches a job
+     * Processes the response from Econt after sending the shipment details. It updates the shipment record with the carrier response,
+     *  tracking number, label URL, and changes the status to 'confirmed'. It logs the successful confirmation and dispatches a job
      *  to send a tracking email to the customer.
      */
     private function processResponse($shipment, array $response): void
@@ -147,15 +146,6 @@ class SendShipmentToEcont implements ShouldQueue
             'sent_to_carrier_at' => now(),
             'error_message' => null,
         ]);
-
-        // Зареждаме отново shipment-а с order данните за по-нататъшна обработка
-        $shipment->loadMissing('order');
-
-        if ($shipment->order && $shipment->order->status !== 'cancelled') {
-            $shipment->order->update([
-                'status' => 'shipped',
-            ]);
-        }
 
         Log::info('Shipment confirmed by Econt', [
             'shipment_id' => $shipment->id,

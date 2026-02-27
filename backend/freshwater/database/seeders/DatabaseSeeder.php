@@ -25,6 +25,7 @@ class DatabaseSeeder extends Seeder
         */
         $superadminRole = Role::firstOrCreate(['name' => 'superadmin']);
         $adminRole = Role::firstOrCreate(['name' => 'admin']);
+        $customerRole = Role::firstOrCreate(['name' => 'customer']);
 
         /*
         |--------------------------------------------------------------------------
@@ -135,6 +136,15 @@ class DatabaseSeeder extends Seeder
         );
         $admin->syncRoles(['admin']);
 
+        $customer = User::firstOrCreate(
+            ['email' => 'customer@example.com'],
+            [
+                'name' => 'John Doe',
+                'phone' => '0888123456',
+                'password' => Hash::make('password'),
+            ]
+        );
+        $customer->syncRoles(['customer']);
         /*
         |--------------------------------------------------------------------------
         | Other seeders

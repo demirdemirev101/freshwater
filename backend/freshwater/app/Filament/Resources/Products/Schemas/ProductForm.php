@@ -42,7 +42,6 @@ class ProductForm
                             TextInput::make('price')
                                 ->label('Цена')
                                 ->numeric()
-                                ->required()
                                 ->prefix('€ '),
 
                             TextInput::make('sale_price')

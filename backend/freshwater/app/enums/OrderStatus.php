@@ -5,6 +5,9 @@ namespace App\Enums;
 enum OrderStatus: string
 {
     case PENDING = 'pending';
+    case CREATED = 'created';
+    case CONFIRMED = 'confirmed';
+    case IN_TRANSIT = 'in_transit';
     case PENDING_REVIEW = 'pending_review';
     case PROCESSING = 'processing';
     case READY_FOR_SHIPMENT = 'ready_for_shipment';
@@ -18,11 +21,14 @@ enum OrderStatus: string
     {
         return match ($this) {
             self::PENDING => 'В очакване',
+            self::CONFIRMED => 'Потвърдена',
+            self::CREATED => 'Създадена',
             self::PENDING_REVIEW => 'Чака потвърждение',
             self::PROCESSING => 'Обработва се',
             self::READY_FOR_SHIPMENT => 'Готова за изпращане',
             self::SHIPPED => 'Изпратена',
             self::COMPLETED => 'Завършена',
+            self::IN_TRANSIT => 'В транзит',
             self::CANCELLED => 'Отменена',
             self::RETURN_REQUESTED => 'Заявено връщане',
             self::RETURNED => 'Върната',
