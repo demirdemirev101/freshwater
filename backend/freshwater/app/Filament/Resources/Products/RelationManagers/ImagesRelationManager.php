@@ -57,14 +57,19 @@ class ImagesRelationManager extends RelationManager
         return $schema
             ->components([
                 Toggle::make('is_primary')
+                    ->label('Основно изображение')
                     ->required(),
                 TextInput::make('sort_order')
+                    ->label('Ред на изображението')
                     ->required()
                     ->numeric()
                     ->default(0),
                 FileUpload::make('image_path')
+                    ->label('Изображение')
                     ->image()
                     ->disk('public')
+                    ->directory('product-images')
+                    ->maxSize(5120)
                     ->required(),
             ]);
     }

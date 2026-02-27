@@ -28,6 +28,7 @@ class RelatedProductsRelationManager extends RelationManager
                 ImageColumn::make('primaryImage.image_path')
                     ->label('Снимка')
                     ->disk('public')
+                    ->circular()
                     ->square(),
 
                 TextColumn::make('name')
@@ -36,12 +37,12 @@ class RelatedProductsRelationManager extends RelationManager
 
                 TextColumn::make('price')
                     ->label('Цена')
-                    ->money('BGN')
+                    ->money('EUR')
                     ->placeholder('-'),
 
                 TextColumn::make('sale_price')
                     ->label('Цена с отстъпка')
-                    ->money('BGN')
+                    ->money('EUR')
                     ->visible(fn ($record) => $record?->sale_price !== null),
 
                 IconColumn::make('stock')
