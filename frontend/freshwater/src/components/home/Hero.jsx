@@ -3,12 +3,29 @@ import gsap from "gsap";
 import heroSlides from "./heroSlides";
 import "../../styles/home-styles/hero.css";
 
-const IDLE_DURATION = 6;
+const AUTO_ADVANCE_MS = 8200;
+const STAGGER_STEP = 0.14;
 
 const Hero = () => {
   const [index, setIndex] = useState(0);
   const rootRef = useRef(null);
   const tlRef = useRef(null);
+  const timerRef = useRef(null);
+
+  useEffect(() => {
+    // Preload backgrounds to avoid visual "jumps" when switching slides.
+    const images = heroSlides.map((slide) => {
+      const img = new Image();
+      img.src = slide.bg;
+      return img;
+    });
+
+    return () => {
+      images.forEach((img) => {
+        img.src = "";
+      });
+    };
+  }, []);
 
   useEffect(() => {
     const root = rootRef.current;
@@ -18,53 +35,68 @@ const Hero = () => {
     const bg = q(".hero-bg");
 
     if (tlRef.current) tlRef.current.kill();
+    if (timerRef.current) clearTimeout(timerRef.current);
 
     const slide = heroSlides[index];
 
     const tl = gsap.timeline({
       defaults: { ease: "power2.out" },
-      onComplete: () => {
-        setIndex((i) => (i + 1) % heroSlides.length);
-      },
     });
 
     tlRef.current = tl;
 
-    // RESET
-    tl.set(q(".hero-el"), { autoAlpha: 0, y: 25, scale: 1 });
-    tl.set(bg, { opacity: 1 });
+    // Reset all animated parts to a clean base state.
+    tl.set(q(".hero-el"), { autoAlpha: 0, y: 0, scale: 1 });
+    tl.set(bg, { opacity: 0.92, scale: 1 });
 
-    // Soft background fade-in
-    tl.fromTo(
-      bg,
-      { opacity: 0.92 },
-      { opacity: 1, duration: 1.1, ease: "sine.out" }
-    );
+    // Smooth background fade-in without "floating" movement.
+    tl.fromTo(bg, { opacity: 0.92 }, { opacity: 1, duration: 1.05, ease: "sine.out" });
 
-    // ======================
-    // SLIDE 1
-    // ======================
+    // Slide 1: stagger reveal (one by one).
     if (slide.type === "compact") {
-      tl.to(q(".el-compact"), { autoAlpha: 1, y: 0, duration: 0.8 })
-        .to(q(".el-compact-text"), { autoAlpha: 1, y: 0 }, "-=0.6")
-        .to(q(".bubble-1"), { autoAlpha: 1, y: 0 }, "-=0.5")
-        .to(q(".bubble-2"), { autoAlpha: 1, y: 0 }, "-=0.6")
-        .to(q(".hero-btn"), { autoAlpha: 1, y: 0 }, "-=0.6");
+      tl.fromTo(
+        [
+          ...q(".el-compact"),
+          ...q(".el-compact-text"),
+          ...q(".bubble-1"),
+          ...q(".bubble-2"),
+          ...q(".hero-btn"),
+        ],
+        { autoAlpha: 0, y: 0, scale: 1 },
+        {
+          autoAlpha: 1,
+          y: 0,
+          scale: 1,
+          duration: 0.62,
+          ease: "sine.out",
+          stagger: STAGGER_STEP,
+        },
+        "-=0.62"
+      );
     }
 
-    // ======================
-    // SLIDE 2
-    // ======================
+    // Slide 2: text-first sequential reveal.
     if (slide.type === "text") {
-      tl.to(q(".el-title-text"), { autoAlpha: 1, y: 0, duration: 0.8 })
-        .to(q(".el-title-text-big"), { autoAlpha: 1, y: 0 }, "-=0.6")
-        .to(q(".el-subtitle"), { autoAlpha: 1, y: 0 }, "-=0.5")
-        .to(q(".hero-btn"), { autoAlpha: 1, y: 0 }, "-=0.5");
+      tl.fromTo(
+        [
+          ...q(".el-title-text"),
+          ...q(".el-title-text-big"),
+          ...q(".el-subtitle"),
+          ...q(".hero-btn"),
+        ],
+        { autoAlpha: 0, y: 0 },
+        {
+          autoAlpha: 1,
+          y: 0,
+          duration: 0.62,
+          ease: "sine.out",
+          stagger: STAGGER_STEP + 0.02,
+        },
+        "-=0.62"
+      );
     }
 
-    // ======================
-    // SLIDE 3
-    // ======================
+    // Slide 3: reveal -> merge -> bubbles -> CTA.
     if (slide.type === "uniq") {
       const logo = q(".el-logo");
       const title = q(".el-title-uniq");
@@ -76,40 +108,66 @@ const Hero = () => {
       const bubbleBox = q(".bubble-uniqbox");
       const btn = q(".hero-btn");
 
-      tl.set(withSink, { autoAlpha: 0 });
+      tl.set(withSink, { autoAlpha: 0, y: 0 });
 
-      tl.to(logo, { autoAlpha: 1, y: 0 })
-        .to(title, { autoAlpha: 1, y: 0 }, "-=0.6")
-
-        .to(uniq, { autoAlpha: 1, y: 0 }, "-=0.5")
-        .to(box, { autoAlpha: 1, y: 0 }, "-=0.6")
-        .to(sink, { autoAlpha: 1, y: 0 }, "-=0.6")
-
-        // merge effect
-        .to(withSink, { autoAlpha: 1, duration: 0.25 }, "-=0.1")
-        .to([box, sink], { autoAlpha: 0, duration: 0.25 }, "<")
-
-        // smooth bubble drop
+      tl.fromTo(
+        [...logo, ...title],
+        { autoAlpha: 0, y: 0 },
+        {
+          autoAlpha: 1,
+          y: 0,
+          duration: 0.6,
+          ease: "sine.out",
+          stagger: STAGGER_STEP,
+        },
+        "-=0.62"
+      )
         .fromTo(
-          bubbleUniq,
-          { autoAlpha: 0, scale: 0.8, y: -15 },
-          { autoAlpha: 1, scale: 1, y: 0, duration: 0.8, ease: "power3.out" },
-          "-=0.2"
+          [...uniq, ...box, ...sink],
+          { autoAlpha: 0, y: 0, scale: 1 },
+          {
+            autoAlpha: 1,
+            y: 0,
+            scale: 1,
+            duration: 0.6,
+            ease: "sine.out",
+            stagger: STAGGER_STEP,
+          },
+          "-=0.34"
+        )
+        // Merge transition without popping movement.
+        .to(withSink, { autoAlpha: 1, y: 0, duration: 0.32, ease: "sine.out" }, "-=0.08")
+        .to([box, sink], { autoAlpha: 0, duration: 0.32, ease: "sine.out" }, "<")
+        // Bubble reveal in sequence.
+        .fromTo(
+          [...bubbleUniq, ...bubbleBox],
+          { autoAlpha: 0, scale: 1, y: 0 },
+          {
+            autoAlpha: 1,
+            scale: 1,
+            y: 0,
+            duration: 0.66,
+            ease: "sine.out",
+            stagger: 0.16,
+          },
+          "-=0.02"
         )
         .fromTo(
-          bubbleBox,
-          { autoAlpha: 0, scale: 0.8, y: -15 },
-          { autoAlpha: 1, scale: 1, y: 0, duration: 0.8, ease: "power3.out" },
-          "-=0.6"
-        )
-
-        .to(btn, { autoAlpha: 1, y: 0 }, "-=0.6");
+          btn,
+          { autoAlpha: 0, y: 0 },
+          { autoAlpha: 1, y: 0, duration: 0.58, ease: "sine.out" },
+          "-=0.22"
+        );
     }
 
-    // IDLE
-    tl.to({}, { duration: IDLE_DURATION });
+    timerRef.current = setTimeout(() => {
+      setIndex((i) => (i + 1) % heroSlides.length);
+    }, AUTO_ADVANCE_MS);
 
-    return () => tl.kill();
+    return () => {
+      tl.kill();
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
   }, [index]);
 
   const slide = heroSlides[index];
@@ -188,6 +246,7 @@ const Hero = () => {
             className={`hero-dot ${i === index ? "active" : ""}`}
             onClick={() => setIndex(i)}
             type="button"
+            aria-label={`Слайд ${i + 1}`}
           />
         ))}
       </div>

@@ -8,6 +8,8 @@ import About from "./pages/About";
 import Contacts from "./pages/Contacts";
 import ZaDoma from "./pages/ZaDoma";
 import ZaBiznesa from "./pages/ZaBiznesa";
+import IonizatorZaVoda from "./pages/IonizatorZaVoda";
+import ProductShow from "./pages/ProductShow";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -29,6 +31,9 @@ function App() {
 
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/ionizator-za-voda" element={<IonizatorZaVoda />} />
+          <Route path="/produkti" element={<ZaDoma pageMode="all" />} />
+          <Route path="/produkti/:productId" element={<ProductShow />} />
           <Route path="/za-doma" element={<ZaDoma />} />
           <Route path="/za-biznesa" element={<ZaBiznesa />} />
           <Route path="/about" element={<About />} />

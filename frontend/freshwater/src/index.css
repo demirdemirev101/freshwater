@@ -1,6 +1,19 @@
+/* Global font map */
+:root {
+  --font-base: "Jost", "Montserrat", "Ubuntu", "Exo", "Segoe UI", Arial, sans-serif;
+  --font-jost: "Jost", "Montserrat", "Ubuntu", "Exo", "Segoe UI", Arial, sans-serif;
+  --font-exo: "Exo", "Jost", "Montserrat", "Segoe UI", Arial, sans-serif;
+  --font-montserrat: "Montserrat", "Jost", "Ubuntu", "Segoe UI", Arial, sans-serif;
+  --font-ubuntu: "Ubuntu", "Jost", "Montserrat", "Segoe UI", Arial, sans-serif;
+  --font-playfair: "Playfair Display", Georgia, "Times New Roman", serif;
+}
+
 body {
   height: 100%;
   margin: 0;
+  font-family: var(--font-base);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 code {
@@ -17,8 +30,6 @@ code {
 .app-content {
   flex: 1;
 }
-
-@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap");
 
 .za-doma-list-description p {
   margin: 0 0 8px;

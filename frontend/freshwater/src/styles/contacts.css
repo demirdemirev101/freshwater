@@ -10,7 +10,7 @@
   background-position: center;
   background-size: cover;
   background-repeat: no-repeat;
-  font-family: "Montserrat", sans-serif;
+  font-family: var(--font-montserrat);
 
   display: flex;
   flex-direction: column;
@@ -31,7 +31,7 @@
   padding: 14px 36px;          /* по-широк и леко по-висок */
   font-size: 16px;             /* по-едър текст */
   font-weight: 500;
-  font-family: "Ubuntu", Sans-serif;
+  font-family: var(--font-ubuntu);
   border-radius: 6px;
   background: linear-gradient(90deg, #1e9c8b, #3dd6b5);
   color: #ffffff;              /* бял текст по подразбиране */

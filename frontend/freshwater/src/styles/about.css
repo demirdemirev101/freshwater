@@ -51,7 +51,7 @@
   margin-top: 40px;
   text-align: center;
   font-weight: 700;
-  font-family: "Ubuntu", Sans-serif;
+  font-family: var(--font-ubuntu);
   margin-bottom: 40px;
   letter-spacing: 1px;
 }
@@ -191,8 +191,9 @@
 }
 
 .about-accent {
+  font-family: var(--font-playfair);
   font-style: italic;
-  font-weight: 600;
+  font-weight: 700;
   color: #111111;
   cursor: default;
   transition: color 0.25s ease;

@@ -24,7 +24,7 @@
 
 .about-form-content h2 {
     margin: 0px 0px 25px 0px;
-    font-family: "Ubuntu", Sans-serif;
+    font-family: var(--font-ubuntu);
     font-size: 28px;
     font-weight: 700;
     line-height: 52px;
@@ -33,7 +33,7 @@
 /* subtitle – ONE LINE */
 .about-form-content p {
   font-size: 15px;
-  font-family: "Ubuntu", Sans-serif;
+  font-family: var(--font-ubuntu);
   line-height: 1.6;
   margin-bottom: 10px 0px;
   white-space: nowrap;
@@ -55,7 +55,7 @@
 .field label {
   margin-bottom: 6px;
   font-size: 18px;
-  font-family: 'Jost', sans-serif;
+  font-family: var(--font-jost);
 }
 
 .field span {

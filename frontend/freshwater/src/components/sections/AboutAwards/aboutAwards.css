@@ -6,7 +6,7 @@
 
 .section-header h2 {
   font-size: 28px;
-  font-family: 'Ubuntu', sans-serif;
+  font-family: var(--font-ubuntu);
   font-weight: 600;
   letter-spacing: 1px;
   color: #1c2b33;
@@ -85,7 +85,7 @@ transition: transform 0.3s ease, filter 0.3s ease;
 
 /* YEAR */
 .award-card h3 {
-  font-family: "Ubuntu", Sans-serif;
+  font-family: var(--font-ubuntu);
   font-size: 19px;
   font-weight: 500;
   letter-spacing: 1;
@@ -96,7 +96,7 @@ transition: transform 0.3s ease, filter 0.3s ease;
 /* TEXT */
 .award-card p {
   color: #656565;
-  font-family: "Ubuntu", Sans-serif;
+  font-family: var(--font-ubuntu);
   line-height: 1.6;
   font-size: 14px;
 }
