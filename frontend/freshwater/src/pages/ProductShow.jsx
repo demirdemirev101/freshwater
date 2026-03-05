@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useLocation, useParams } from "react-router-dom";
-
-const API_BASE_URL =
-  process.env.REACT_APP_API_URL || "http://192.168.1.208";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { getProductById } from "../services/productsApi";
+import { useCart } from "../context/CartContext";
+import "../styles/product-show.css";
 
 const BGN_RATE = 1.95583;
+const MIN_QTY = 1;
+const MAX_QTY = 99;
 
 const formatMoney = (value) => {
   const num = Number(value);
@@ -16,46 +18,55 @@ const formatMoney = (value) => {
   return num.toFixed(2);
 };
 
+const clampQuantity = (value) => {
+  const qty = Math.round(Number(value));
+
+  if (!Number.isFinite(qty) || qty < MIN_QTY) return MIN_QTY;
+  if (qty > MAX_QTY) return MAX_QTY;
+
+  return qty;
+};
+
 const ProductShow = () => {
   const { productId } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
+  const { addToCart } = useCart();
   const [product, setProduct] = useState(null);
+  const [quantity, setQuantity] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
+  const [showAddedMessage, setShowAddedMessage] = useState(false);
 
-  const endpoint = useMemo(() => `${API_BASE_URL}/api/products`, []);
   const normalizedProductId = useMemo(() => String(productId || ""), [productId]);
   const returnTo = location.state?.from || "/produkti";
 
   useEffect(() => {
-    const controller = new AbortController();
+    let isMounted = true;
 
     const loadProduct = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch(endpoint, {
-          headers: { Accept: "application/json" },
-          signal: controller.signal,
-        });
-
-        const payload = await response.json();
-        const data = payload?.data || [];
-        const matchedProduct = data.find(
-          (item) => String(item?.id || "") === normalizedProductId
-        );
-
-        setProduct(matchedProduct || null);
+        const matchedProduct = await getProductById(normalizedProductId);
+        if (isMounted) setProduct(matchedProduct || null);
       } catch (err) {
         console.log(err);
-        setProduct(null);
+        if (isMounted) setProduct(null);
       } finally {
-        setIsLoading(false);
+        if (isMounted) setIsLoading(false);
       }
     };
 
     loadProduct();
 
-    return () => controller.abort();
-  }, [endpoint, normalizedProductId]);
+    return () => {
+      isMounted = false;
+    };
+  }, [normalizedProductId]);
+
+  useEffect(() => {
+    setQuantity(1);
+    setShowAddedMessage(false);
+  }, [normalizedProductId]);
 
   const image = product?.images?.[0]?.url;
   const basePriceNum = Number(product?.price);
@@ -71,13 +82,46 @@ const ProductShow = () => {
   const salePriceBgn = hasSalePrice ? formatMoney(salePriceNum * BGN_RATE) : null;
   const descriptionHtml = product?.description || product?.short_description || "";
 
+  const handleQuantityInput = (event) => {
+    const raw = event.target.value;
+
+    if (raw === "") {
+      setQuantity(MIN_QTY);
+      return;
+    }
+
+    setQuantity(clampQuantity(raw));
+  };
+
+  const handleIncreaseQuantity = () => {
+    setQuantity((prev) => clampQuantity(prev + 1));
+  };
+
+  const handleDecreaseQuantity = () => {
+    setQuantity((prev) => clampQuantity(prev - 1));
+  };
+
+  const handleAddToCart = () => {
+    if (!product) return;
+
+    addToCart(product, quantity);
+    setShowAddedMessage(true);
+  };
+
+  const handleBuyNow = () => {
+    if (!product) return;
+
+    addToCart(product, quantity);
+    navigate("/cart");
+  };
+
   return (
     <>
       <section
         style={{
           background: "linear-gradient(100deg, #28b28f 0%, #1a4f8f 100%)",
           borderBottom: "8px solid #ffffff",
-          marginTop: "112px",
+          marginTop: "80px",
           padding: "clamp(20px, 2.6vw, 28px) clamp(16px, 7vw, 80px)",
         }}
       >
@@ -124,6 +168,19 @@ const ProductShow = () => {
         </div>
       </section>
 
+      {showAddedMessage && product && (
+        <section className="product-show-added-wrap" aria-live="polite">
+          <div className="product-show-added">
+            <p className="product-show-added__text">
+              „{product.name}“ е добавен във вашата количка.
+            </p>
+            <Link to="/cart" className="product-show-added__link">
+              преглед на количката
+            </Link>
+          </div>
+        </section>
+      )}
+
       <section
         style={{
           padding: "clamp(28px, 4.8vw, 64px) clamp(16px, 7vw, 80px)",
@@ -168,6 +225,8 @@ const ProductShow = () => {
                 <img
                   src={image}
                   alt={product?.name || "Продукт"}
+                  loading="eager"
+                  decoding="async"
                   style={{
                     width: "88%",
                     objectFit: "contain",
@@ -247,6 +306,42 @@ const ProductShow = () => {
                     <span style={{ color: "#139cc8", fontWeight: 600 }}>По запитване</span>
                   )}
                 </div>
+
+                <div className="product-show-action-row">
+                  <div className="product-show-qty">
+                    <button
+                      type="button"
+                      aria-label="Намали количество"
+                      onClick={handleDecreaseQuantity}
+                    >
+                      −
+                    </button>
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      min={MIN_QTY}
+                      max={MAX_QTY}
+                      value={quantity}
+                      onChange={handleQuantityInput}
+                    />
+                    <button
+                      type="button"
+                      aria-label="Увеличи количество"
+                      onClick={handleIncreaseQuantity}
+                    >
+                      +
+                    </button>
+                  </div>
+
+                  <button type="button" className="product-show-buy-btn" onClick={handleBuyNow}>
+                    <span>Купи сега</span>
+                    <span aria-hidden="true">→</span>
+                  </button>
+                </div>
+
+                <button type="button" className="product-show-add-btn" onClick={handleAddToCart}>
+                  Добави в количката
+                </button>
 
                 <h2
                   style={{

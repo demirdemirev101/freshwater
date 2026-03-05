@@ -13,7 +13,12 @@ const Footer = () => {
           {/* LOGO + SOCIAL */}
           <div className="footer-col">
             <div className="footer-logo">
-              <img src="/images/main-logos/white-logo.png" alt="Freshwater" />
+              <img
+                src="/images/main-logos/white-logo.png"
+                alt="Freshwater"
+                loading="lazy"
+                decoding="async"
+              />
             </div>
 
             <div className="footer-socials">

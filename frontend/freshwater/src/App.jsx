@@ -1,15 +1,16 @@
-import { useEffect } from "react";
+import { Suspense, lazy, useEffect } from "react";
 import Header from "./components/layout/Header";
 import Footer from "./components/layout/Footer";
 import { Routes, Route, useLocation } from "react-router-dom";
 
-import Home from "./pages/Home";
-import About from "./pages/About";
-import Contacts from "./pages/Contacts";
-import ZaDoma from "./pages/ZaDoma";
-import ZaBiznesa from "./pages/ZaBiznesa";
-import IonizatorZaVoda from "./pages/IonizatorZaVoda";
-import ProductShow from "./pages/ProductShow";
+const Home = lazy(() => import("./pages/Home"));
+const About = lazy(() => import("./pages/About"));
+const Contacts = lazy(() => import("./pages/Contacts"));
+const ZaDoma = lazy(() => import("./pages/ZaDoma"));
+const ZaBiznesa = lazy(() => import("./pages/ZaBiznesa"));
+const IonizatorZaVoda = lazy(() => import("./pages/IonizatorZaVoda"));
+const ProductShow = lazy(() => import("./pages/ProductShow"));
+const Cart = lazy(() => import("./pages/Cart"));
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -29,16 +30,19 @@ function App() {
       <main className="app-content">
         <ScrollToTop />
 
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/ionizator-za-voda" element={<IonizatorZaVoda />} />
-          <Route path="/produkti" element={<ZaDoma pageMode="all" />} />
-          <Route path="/produkti/:productId" element={<ProductShow />} />
-          <Route path="/za-doma" element={<ZaDoma />} />
-          <Route path="/za-biznesa" element={<ZaBiznesa />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/contacts" element={<Contacts />} />
-        </Routes>
+        <Suspense fallback={<div className="route-loading">Loading...</div>}>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/ionizator-za-voda" element={<IonizatorZaVoda />} />
+            <Route path="/produkti" element={<ZaDoma pageMode="all" />} />
+            <Route path="/produkti/:productId" element={<ProductShow />} />
+            <Route path="/cart" element={<Cart />} />
+            <Route path="/za-doma" element={<ZaDoma />} />
+            <Route path="/za-biznesa" element={<ZaBiznesa />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/contacts" element={<Contacts />} />
+          </Routes>
+        </Suspense>
       </main>
 
       <Footer />
@@ -47,3 +51,4 @@ function App() {
 }
 
 export default App;
+

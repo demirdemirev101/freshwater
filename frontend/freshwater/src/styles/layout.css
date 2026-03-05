@@ -190,7 +190,11 @@
 /* CART */
 .cart-box {
   position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
+  text-decoration: none;
 }
 
 .cart-icon {
@@ -231,6 +235,10 @@
 
 .cart-box:hover .cart-icon {
   stroke: #1a5fa0;
+}
+
+.cart-box--active .cart-icon {
+  stroke: #155493;
 }
 
 .cart-count {

@@ -1,11 +1,14 @@
 import { NavLink } from "react-router-dom";
 import { useEffect, useState } from "react";
 import "../../styles/layout.css";
+import { useCart } from "../../context/CartContext";
 
 const Header = () => {
   const [scrolled, setScrolled] = useState(false);
   const [openMenu, setOpenMenu] = useState(null);
   const [openSubmenu, setOpenSubmenu] = useState(null);
+  const { totalItems } = useCart();
+  const displayedCartCount = totalItems > 99 ? "99+" : totalItems;
 
   useEffect(() => {
     const onScroll = () => {
@@ -131,6 +134,9 @@ const Header = () => {
               src="/images/main-logos/logo.png"
               alt="Freshwater"
               className={`logo-img ${scrolled ? "logo-img--small" : ""}`}
+              loading="eager"
+              decoding="async"
+              fetchPriority="high"
             />
           </NavLink>
         </div>
@@ -215,7 +221,11 @@ const Header = () => {
             />
           </div>
 
-          <div className="cart-box">
+          <NavLink
+            to="/cart"
+            aria-label="Количка"
+            className={({ isActive }) => `cart-box${isActive ? " cart-box--active" : ""}`}
+          >
             <svg
               className="cart-icon"
               viewBox="0 0 24 24"
@@ -226,8 +236,8 @@ const Header = () => {
               <circle cx="18" cy="21" r="1" />
             </svg>
 
-            <span className="cart-count">0</span>
-          </div>
+            <span className="cart-count">{displayedCartCount}</span>
+          </NavLink>
         </div>
       </div>
     </header>

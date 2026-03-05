@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-
-const API_BASE_URL =
-  process.env.REACT_APP_API_URL || "http://192.168.1.208";
+import { getAllProducts } from "../services/productsApi";
 
 const BGN_RATE = 1.95583;
 const PRODUCTS_PER_PAGE = 12;
@@ -163,29 +161,25 @@ const ZaDoma = ({ pageMode = "home" }) => {
   const parentFilterKey = homeFilter ? HOME_FILTER_PARENT[homeFilter] || null : null;
   const parentFilterLabel = parentFilterKey ? HOME_FILTER_LABELS[parentFilterKey] || null : null;
 
-  const endpoint = useMemo(() => `${API_BASE_URL}/api/products`, []);
-
   useEffect(() => {
-    const controller = new AbortController();
+    let isMounted = true;
 
     const loadProducts = async () => {
       try {
-        const response = await fetch(endpoint, {
-          headers: { Accept: "application/json" },
-          signal: controller.signal,
-        });
-
-        const payload = await response.json();
-        setProducts(payload.data || []);
+        const data = await getAllProducts();
+        if (isMounted) setProducts(data);
       } catch (err) {
         console.log(err);
+        if (isMounted) setProducts([]);
       }
     };
 
     loadProducts();
 
-    return () => controller.abort();
-  }, [endpoint]);
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const sortedProducts = useMemo(
     () =>
@@ -245,7 +239,7 @@ const ZaDoma = ({ pageMode = "home" }) => {
         style={{
           background: "linear-gradient(100deg, #28b28f 0%, #1a4f8f 100%)",
           borderBottom: "8px solid #ffffff",
-          marginTop: "112px",
+          marginTop: "80px",
           padding: "clamp(20px, 2.6vw, 28px) clamp(16px, 7vw, 80px)",
         }}
       >

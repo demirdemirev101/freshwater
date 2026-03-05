@@ -115,7 +115,12 @@ export default function AboutAwards() {
         {awards.map((award, index) => (
           <div className="award-card" key={index}>
             <div className="award-icon">
-              <img src={award.image} alt={`Награда ${award.year}`} />
+              <img
+                src={award.image}
+                alt={`Награда ${award.year}`}
+                loading="lazy"
+                decoding="async"
+              />
             </div>
 
             <h3>{award.year}</h3>

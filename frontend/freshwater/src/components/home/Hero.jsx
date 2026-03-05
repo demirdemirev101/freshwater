@@ -102,7 +102,6 @@ const Hero = () => {
       const title = q(".el-title-uniq");
       const uniq = q(".uniq-uniq");
       const box = q(".uniq-box");
-      const sink = q(".uniq-sink");
       const withSink = q(".uniq-withSink");
       const bubbleUniq = q(".bubble-uniq");
       const bubbleBox = q(".bubble-uniqbox");
@@ -123,7 +122,7 @@ const Hero = () => {
         "-=0.62"
       )
         .fromTo(
-          [...uniq, ...box, ...sink],
+          [...uniq, ...box],
           { autoAlpha: 0, y: 0, scale: 1 },
           {
             autoAlpha: 1,
@@ -137,7 +136,7 @@ const Hero = () => {
         )
         // Merge transition without popping movement.
         .to(withSink, { autoAlpha: 1, y: 0, duration: 0.32, ease: "sine.out" }, "-=0.08")
-        .to([box, sink], { autoAlpha: 0, duration: 0.32, ease: "sine.out" }, "<")
+        .to([box], { autoAlpha: 0, duration: 0.32, ease: "sine.out" }, "<")
         // Bubble reveal in sequence.
         .fromTo(
           [...bubbleUniq, ...bubbleBox],
@@ -182,12 +181,30 @@ const Hero = () => {
       <div className="hero-content" key={slide.id}>
         {slide.type === "compact" && (
           <>
-            <img src="/images/home-images/hero/compact.png" className="hero-el el-compact" alt="" />
+            <img
+              src="/images/home-images/hero/compact.png"
+              className="hero-el el-compact"
+              alt=""
+              loading="eager"
+              decoding="async"
+            />
             <div className="hero-el el-compact-text">
               комплект за филтриране на вода
             </div>
-            <img src="/images/home-images/hero/BubbleWithSink1.png" className="hero-el bubble-1" alt="" />
-            <img src="/images/home-images/hero/BubbleWithSink2.png" className="hero-el bubble-2" alt="" />
+            <img
+              src="/images/home-images/hero/BubbleWithSink1.png"
+              className="hero-el bubble-1"
+              alt=""
+              loading="eager"
+              decoding="async"
+            />
+            <img
+              src="/images/home-images/hero/BubbleWithSink2.png"
+              className="hero-el bubble-2"
+              alt=""
+              loading="eager"
+              decoding="async"
+            />
             <button className="hero-el hero-btn" style={slide.buttonPosition} type="button">
               ПОРЪЧАЙ СЕГА
             </button>
@@ -209,25 +226,48 @@ const Hero = () => {
 
         {slide.type === "uniq" && (
           <>
-            <img src="/images/home-images/hero/White-logo-mini.png" className="hero-el el-logo" alt="" />
+            <img
+              src="/images/home-images/hero/White-logo-mini.png"
+              className="hero-el el-logo"
+              alt=""
+              loading="lazy"
+              decoding="async"
+            />
 
             <div className="hero-el el-title-uniq">
               Филтриращи<br />системи<br />за вода
             </div>
 
             <div className="el-uniq-products">
-              <img src="/images/home-images/hero/UNIQ.png" className="hero-el uniq-uniq" alt="" />
-              <img src="/images/home-images/hero/UNIQ-BOX.png" className="hero-el uniq-box" alt="" />
-              <img src="/images/home-images/hero/UNIQ-sink.png" className="hero-el uniq-sink" alt="" />
-              <img src="/images/home-images/hero/UNIQ-BOX-withSink.png" className="hero-el uniq-withSink" alt="" />
+              <img
+                src="/images/home-images/hero/UNIQ.png"
+                className="hero-el uniq-uniq"
+                alt=""
+                loading="lazy"
+                decoding="async"
+              />
+              <img
+                src="/images/home-images/hero/UNIQ-BOX.png"
+                className="hero-el uniq-box"
+                alt=""
+                loading="lazy"
+                decoding="async"
+              />
+              <img
+                src="/images/home-images/hero/UNIQ-BOX-withSink.png"
+                className="hero-el uniq-withSink"
+                alt=""
+                loading="lazy"
+                decoding="async"
+              />
 
               <div className="hero-el bubble bubble-uniq">
-                <img src="/images/home-images/hero/OnlyBubble.png" alt="" />
+                <img src="/images/home-images/hero/OnlyBubble.png" alt="" loading="lazy" decoding="async" />
                 <span>UNIQ</span>
               </div>
 
               <div className="hero-el bubble bubble-uniqbox">
-                <img src="/images/home-images/hero/OnlyBubble.png" alt="" />
+                <img src="/images/home-images/hero/OnlyBubble.png" alt="" loading="lazy" decoding="async" />
                 <span>UNIQ BOX</span>
               </div>
             </div>

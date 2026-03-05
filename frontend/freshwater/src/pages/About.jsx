@@ -36,7 +36,12 @@ export default function About() {
 
           <div className="about-who-content">
             <div className="about-who-logo">
-              <img src="/images/main-logos/logo-one-color.png" alt="Freshwater logo" />
+              <img
+                src="/images/main-logos/logo-one-color.png"
+                alt="Freshwater logo"
+                loading="lazy"
+                decoding="async"
+              />
             </div>
 
             <div className="about-who-text">

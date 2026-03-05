@@ -1,4 +1,4 @@
-.hero {
+﻿.hero {
   position: relative;
   height: 100vh;
   overflow: hidden;
@@ -113,7 +113,7 @@
 }
 
 .bubble span {
-  opacity: 1; /* GSAP пак ще контролира, но това спира странни случаи */
+  opacity: 1; /* GSAP Ð¿Ð°Ðº Ñ‰Ðµ ÐºÐ¾Ð½Ñ‚Ñ€Ð¾Ð»Ð¸Ñ€Ð°, Ð½Ð¾ Ñ‚Ð¾Ð²Ð° ÑÐ¿Ð¸Ñ€Ð° ÑÑ‚Ñ€Ð°Ð½Ð½Ð¸ ÑÐ»ÑƒÑ‡Ð°Ð¸ */
 }
 
 .el-title-text {
@@ -174,7 +174,7 @@
   pointer-events: none;
 }
 
-/* Всички product images */
+/* Ð’ÑÐ¸Ñ‡ÐºÐ¸ product images */
 .el-uniq-products img {
   position: absolute;
   height: auto;
@@ -183,7 +183,7 @@
   will-change: transform, opacity;
 }
 
-/* UNIQ (вляво от дясната група) */
+/* UNIQ (Ð²Ð»ÑÐ²Ð¾ Ð¾Ñ‚ Ð´ÑÑÐ½Ð°Ñ‚Ð° Ð³Ñ€ÑƒÐ¿Ð°) */
 .uniq-uniq {
   right: 42%;
   bottom: 0;
@@ -191,7 +191,7 @@
   z-index: 2;
 }
 
-/* UNIQ BOX base (кутия) */
+/* UNIQ BOX base (ÐºÑƒÑ‚Ð¸Ñ) */
 .uniq-box {
   right: 0;
   bottom: 0;
@@ -199,15 +199,7 @@
   z-index: 2;
 }
 
-/* SINK layer (мивка отделно) */
-.uniq-sink {
-  left: 562px;
-  top: 155px;
-  width: 41.5%;
-  z-index: 2;
-}
-
-/* Final merged image (кутия + мивка) */
+/* Final merged image (ÐºÑƒÑ‚Ð¸Ñ + Ð¼Ð¸Ð²ÐºÐ°) */
 .uniq-withSink {
   right: 0;
   bottom: 0;
@@ -244,7 +236,7 @@
   transform: translateY(2px);
 }
 
-/* bubble positions (над съответните продукти) */
+/* bubble positions (Ð½Ð°Ð´ ÑÑŠÐ¾Ñ‚Ð²ÐµÑ‚Ð½Ð¸Ñ‚Ðµ Ð¿Ñ€Ð¾Ð´ÑƒÐºÑ‚Ð¸) */
 .bubble-uniq {
   right: 47%;
   bottom: 70%;

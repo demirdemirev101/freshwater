@@ -43,6 +43,7 @@ export default function TrustedBy() {
                 src={logo.src}
                 alt={logo.alt}
                 loading="lazy"
+                decoding="async"
               />
             </div>
           ))}

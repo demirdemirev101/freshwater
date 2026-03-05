@@ -23,7 +23,7 @@ const IonizatorZaVoda = () => {
         style={{
           background: "linear-gradient(100deg, #28b28f 0%, #1a4f8f 100%)",
           borderBottom: "8px solid #ffffff",
-          marginTop: "112px",
+          marginTop: "80px",
           padding: "clamp(20px, 2.6vw, 28px) clamp(16px, 7vw, 80px)",
         }}
       >

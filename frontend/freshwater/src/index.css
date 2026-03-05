@@ -31,6 +31,15 @@ code {
   flex: 1;
 }
 
+.route-loading {
+  min-height: 40vh;
+  display: grid;
+  place-items: center;
+  color: #35506a;
+  font-family: var(--font-jost);
+  font-size: 18px;
+}
+
 .za-doma-list-description p {
   margin: 0 0 8px;
 }

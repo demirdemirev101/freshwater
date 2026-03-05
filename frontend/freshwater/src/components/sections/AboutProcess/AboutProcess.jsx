@@ -93,6 +93,8 @@ function LogoSlider({ title, items }) {
               <img
                 src={logo.src}
                 alt={logo.alt}
+                loading="lazy"
+                decoding="async"
                 draggable={false}
               />
             </div>
