@@ -15,6 +15,7 @@ class TestEcontMinimal extends Command
                             {--calculate : Calculate only, no label}
                             {--address : Use senderAddress instead of office}
                             {--office= : Receiver office code (e.g. 1127)}
+                            {--profile=basic : Payload profile: basic|cod}
                             {--mode= : create or validate}';
 
     protected $description = 'Minimal Econt shipment test (no DB, no events)';
@@ -33,6 +34,9 @@ class TestEcontMinimal extends Command
         $order->shipping_address = 'Муткурова';
         $order->shipping_address_num = '84';
         $order->shipping_address_details = 'бл. 5, вх. А, ет. 6';
+        $order->customer_email = null;
+        $order->subtotal = 0.00;
+        $order->payment_method = 'bank_transfer';
 
         // 2️⃣ Shipment model
         $shipment = new Shipment();
@@ -44,6 +48,20 @@ class TestEcontMinimal extends Command
         $shipment->cash_on_delivery = 0;
         $shipment->declared_value = 0;
 
+        $profile = strtolower((string) $this->option('profile'));
+        if (! in_array($profile, ['basic', 'cod'], true)) {
+            $this->error('❌ Invalid --profile. Allowed: basic, cod');
+            return Command::FAILURE;
+        }
+
+        if ($profile === 'cod') {
+            $order->customer_email = 'test@example.com';
+            $order->subtotal = 408.00;
+            $order->payment_method = 'cod';
+            $shipment->cash_on_delivery = 408.00;
+            $shipment->declared_value = 408.00;
+        }
+
         if ($this->option('office')) {
             $shipment->delivery_type = 'office';
             $shipment->office_code = (string) $this->option('office');
@@ -54,6 +72,7 @@ class TestEcontMinimal extends Command
 
         // 3️⃣ Map payload
         $this->info('🔧 Mapping payload...');
+        $this->line('Profile: ' . $profile);
         $mapper = app(EcontPayloadMapper::class);
 
         try {

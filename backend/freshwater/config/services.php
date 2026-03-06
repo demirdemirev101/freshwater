@@ -37,7 +37,6 @@ return [
 
    'econt' => [
         'enabled' => env('ECONT_ENABLED'),
-        'sandbox' => env('ECONT_SANDBOX'),
         'verify_ssl' => env('ECONT_VERIFY_SSL'),
         
         'base_url' => env('ECONT_BASE_URL', 'https://demo.econt.com/ee/services'),

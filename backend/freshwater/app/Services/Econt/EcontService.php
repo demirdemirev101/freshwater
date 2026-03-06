@@ -7,12 +7,6 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
 
-/**
- * This service handles all interactions with the Econt API, including creating shipment labels, tracking shipments, fetching cities and offices,
- *  calculating shipping prices and deleting labels.
- *  It includes robust error handling and logging to ensure that any issues with the API are properly recorded and can be diagnosed.
- *  The service also implements safeguards against oversized API responses to protect queue workers from memory issues.
- */
 class EcontService
 {
     // Define maximum JSON body size to prevent memory issues in queue workers
@@ -32,12 +26,6 @@ class EcontService
         $this->password = config('services.econt.password');
     }
 
-    /**
-     * Create a shipment label with the Econt API. The method accepts a payload array containing all necessary information for the label creation,
-     *  and a mode which can be 'create', 'calculate' or 'validate'.
-     *  It sends a POST request to the Econt API and handles the response, 
-     *  including error logging and exception throwing for any API errors or invalid responses.
-     */
     public function createLabel(array $payload, string $mode = 'create'): array
     {
         // Extract the receiver city from the payload for logging purposes, as it can be useful for diagnosing issues related to specific locations.
@@ -88,11 +76,6 @@ class EcontService
         return $json;
     }
 
-    /**
-     * Track a shipment using its shipment number. This method sends a request to the Econt API to retrieve the current status of the shipment,
-     *  and includes error handling and logging similar to the createLabel method to ensure that any issues with
-     *  tracking are properly recorded and can be diagnosed. The response is decoded with safeguards against oversized payload
-     */
     public function trackShipment(string $shipmentNumber): array
     {
         $response = Http::withOptions([
@@ -114,9 +97,7 @@ class EcontService
 
         return $this->decodeJsonResponse($response, 'trackShipment');
     }
-    /**
-     * Extracts an error message from nested error data.
-     */
+
     private function extractErrorMessage(?array $data): ?string
     {
         if (!$data) {
@@ -143,11 +124,6 @@ class EcontService
         return null;
     }
 
-    /**
-     * Decode JSON responses with a hard cap to protect queue workers from oversized payloads.
-     * If the response body exceeds the defined maximum size, an exception is thrown to prevent memory issues. 
-     * This method also ensures that the decoded JSON is an array and throws an exception if the JSON is invalid or not in the expected format.
-     */
     private function decodeJsonResponse(Response $response, string $context): array
     {
         [$body, $truncated] = $this->readResponseBody($response, self::MAX_JSON_BODY_BYTES);
@@ -165,9 +141,6 @@ class EcontService
         return $decoded;
     }
 
-    /**
-     * Get a preview of the response body for logging purposes, with a defined maximum size to avoid logging excessively large payloads.
-     */
     private function getResponseBodyPreview(Response $response): string
     {
         [$body, $truncated] = $this->readResponseBody($response, self::LOG_BODY_PREVIEW_BYTES);
@@ -175,12 +148,6 @@ class EcontService
         return $truncated ? $body . '...[truncated]' : $body;
     }
 
-    /**
-     * @return array{0: string, 1: bool}
-     * Reads the response body up to a specified maximum number of bytes. Returns the body content and a boolean indicating if it was truncated.
-     * This method ensures that we do not read more than the allowed number of bytes,
-     *  which helps protect against memory issues in queue workers when dealing with large API responses.
-     */
     private function readResponseBody(Response $response, int $maxBytes): array
     {
         // Use the PSR-7 response body stream to read the content with a hard cap on the number of bytes.
@@ -203,12 +170,6 @@ class EcontService
         return [$body, $truncated];
     }
 
-    /**
-     * Download the shipment label PDF URL for a given shipment number. This method sends a request to the Econt API to retrieve the label information
-     *  and returns the URL of the PDF label if available. It includes error handling to ensure that any issues with the API request are properly logged
-     *  and do not cause unhandled exceptions in the application. If the API call fails or the expected data is not present in the response,
-     *  the method returns null.
-     */
     public function downloadLabel(string $shipmentNumber): ?string
     {
         $response = Http::withOptions([
@@ -225,11 +186,7 @@ class EcontService
 
         return null;
     }
-    /**
-     * Delete shipment labels for the given shipment numbers. This method sends a request to the Econt API to delete the specified labels
-     *  and handles the response, including error logging and exception throwing for any API errors or invalid responses. 
-     * The method returns the API response as an array if the deletion is successful, or throws an exception if there are errors.
-     */
+
     public function deleteLabels(array $shipmentNumbers): array
     {
         $response = Http::withOptions([
@@ -263,13 +220,7 @@ class EcontService
 
         return $json;
     }
-    /**
-     * Fetch a list of cities from the Econt API, optionally filtered by a search term. 
-     * This method sends a request to the Econt API to retrieve the list of cities
-     *  and returns an array of cities that match the search criteria. 
-     * It includes error handling to ensure that any issues with the API request are properly logged
-     *  and do not cause unhandled exceptions in the application.
-     */
+
     public function getCities(string $search = ''): array
     {
         $response = Http::withOptions([
