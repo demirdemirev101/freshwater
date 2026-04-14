@@ -46,7 +46,7 @@ class CartController extends Controller
             'quantity'   => 'nullable|integer|min:1',
         ]);
         
-        $quantity = (int)($validated['quantity']);
+        $quantity = (int) ($validated['quantity'] ?? 1);
         
         $this->cart->add($product, $quantity);
 
