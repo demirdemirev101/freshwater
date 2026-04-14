@@ -1,0 +1,75 @@
+<?php
+
+namespace App\Filament\Resources\Products\RelationManagers;
+
+use Filament\Actions\AttachAction;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DetachAction;
+use Filament\Actions\DetachBulkAction;
+
+use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Tables\Columns\ImageColumn;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Table;
+use Filament\Tables\Columns\IconColumn;
+use Illuminate\Support\Facades\Auth;
+
+class RelatedProductsRelationManager extends RelationManager
+{
+    protected static string $relationship = 'relatedProducts';
+
+    protected static ?string $title = 'Свързани продукти';
+
+    public function table(Table $table): Table
+    {
+        return $table
+            ->recordTitleAttribute('name')
+            ->columns([
+                ImageColumn::make('primaryImage.image_path')
+                    ->label('Снимка')
+                    ->disk('public')
+                    ->circular()
+                    ->square(),
+
+                TextColumn::make('name')
+                    ->label('Име')
+                    ->searchable(),
+
+                TextColumn::make('price')
+                    ->label('Цена')
+                    ->money('EUR')
+                    ->placeholder('-'),
+
+                TextColumn::make('sale_price')
+                    ->label('Цена с отстъпка')
+                    ->money('EUR')
+                    ->visible(fn ($record) => $record?->sale_price !== null),
+
+                IconColumn::make('stock')
+                    ->visible(fn ($record) => $record?->stock === false)
+                    ->label('Наличност')
+                    ->boolean(),
+            ])
+            ->filters([
+                //
+            ])
+            ->headerActions([
+                AttachAction::make()
+                    ->label('Добави продукт')
+                    ->recordSelectSearchColumns(['name', 'slug'])
+                    ->preloadRecordSelect(),
+            ])
+            ->recordActions([
+                DetachAction::make()
+                    ->label('Премахни')
+                    ->authorize(fn () => Auth::user()->can('detach related products')),
+            ])
+            ->toolbarActions([
+                BulkActionGroup::make([
+                    DetachBulkAction::make()
+                        ->label('Премахни избраните')
+                        ->authorize(fn () => Auth::user()->can('detach related products')),
+                ]),
+            ]);
+    }
+}
