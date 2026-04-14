@@ -1,0 +1,262 @@
+﻿.hero {
+  position: relative;
+  height: 100vh;
+  overflow: hidden;
+  background: #123f63;
+}
+
+.hero-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  will-change: opacity, transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+.hero-content {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  isolation: isolate;
+}
+
+.hero-el {
+  position: absolute;
+  opacity: 0;
+  color: #fff;
+  will-change: opacity, transform;
+  transform: translate3d(0, 0, 0);
+}
+
+/* BUTTON */
+.hero-btn {
+  padding: 12px 22px;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.62);
+  background: rgba(0, 0, 0, 0.22);
+  font-weight: 700;
+  cursor: pointer;
+  z-index: 5;
+  color: #ffffff;
+  backdrop-filter: blur(1px);
+  transition: transform 220ms ease, background-color 220ms ease, border-color 220ms ease;
+}
+
+.hero-btn:hover {
+  transform: translateY(-1px);
+  background: rgba(8, 23, 38, 0.35);
+  border-color: rgba(255, 255, 255, 0.82);
+}
+
+.hero-btn:active {
+  transform: translateY(0);
+}
+
+/* DOTS */
+.hero-dots {
+  position: absolute;
+  right: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 7;
+}
+
+.hero-dot {
+  width: 6px;
+  height: 28px;
+  background: rgba(255, 255, 255, 0.35);
+  border: none;
+  border-radius: 99px;
+  cursor: pointer;
+  transition: background-color 220ms ease, transform 220ms ease, height 220ms ease;
+}
+
+.hero-dot.active {
+  background: #fff;
+  height: 36px;
+  transform: scaleX(1.05);
+}
+
+.hero-dot:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}
+
+/* POSITIONS */
+.el-compact {
+  left: 8%;
+  top: 24.5%;
+  width: 370px;
+}
+
+.el-compact-text {
+  left: 8.5%;
+  top: 40%;
+  font-size: 48px;
+}
+
+.bubble-1 {
+  left: 8%;
+  top: 69%;
+  width: 170px;
+}
+
+.bubble-2 {
+  left: 20%;
+  top: 69%;
+  width: 170px;
+}
+
+.bubble span {
+  opacity: 1; /* GSAP Ð¿Ð°Ðº Ñ‰Ðµ ÐºÐ¾Ð½Ñ‚Ñ€Ð¾Ð»Ð¸Ñ€Ð°, Ð½Ð¾ Ñ‚Ð¾Ð²Ð° ÑÐ¿Ð¸Ñ€Ð° ÑÑ‚Ñ€Ð°Ð½Ð½Ð¸ ÑÐ»ÑƒÑ‡Ð°Ð¸ */
+}
+
+.el-title-text {
+  left: 12%;
+  top: 42%;
+  font-size: 50px;
+}
+
+.el-title-text-big {
+  left: 12%;
+  top: 48%;
+  font-size: 50px;
+}
+
+.el-subtitle {
+  left: 12%;
+  top: 57%;
+  font-size: 22px;
+  color: rgb(1, 62, 99);
+}
+
+.el-logo {
+  left: 15%;
+  top: 22%;
+  width: 130px;
+}
+
+.el-title-uniq {
+  left: 15%;
+  top: 42%;
+  font-size: 65px;
+}
+
+.el-product {
+  position: absolute;
+  top: 36%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.el-product.uniq {
+  right: 22;
+}
+
+.el-product.uniqbox {
+  right: 4%;
+}
+
+/* ====== UNIQ SLIDE PRODUCTS (SLIDE 3) ====== */
+
+.el-uniq-products {
+  position: absolute;
+  right: 6%;
+  bottom: 8%;
+  width: min(900px, 58vw);
+  height: 70%;
+  pointer-events: none;
+}
+
+/* Ð’ÑÐ¸Ñ‡ÐºÐ¸ product images */
+.el-uniq-products img {
+  position: absolute;
+  height: auto;
+  display: block;
+  max-width: 100%;
+  will-change: transform, opacity;
+}
+
+/* UNIQ (Ð²Ð»ÑÐ²Ð¾ Ð¾Ñ‚ Ð´ÑÑÐ½Ð°Ñ‚Ð° Ð³Ñ€ÑƒÐ¿Ð°) */
+.uniq-uniq {
+  right: 42%;
+  bottom: 0;
+  width: 60%;
+  z-index: 2;
+}
+
+/* UNIQ BOX base (ÐºÑƒÑ‚Ð¸Ñ) */
+.uniq-box {
+  right: 0;
+  bottom: 0;
+  width: 60%;
+  z-index: 2;
+}
+
+/* Final merged image (ÐºÑƒÑ‚Ð¸Ñ + Ð¼Ð¸Ð²ÐºÐ°) */
+.uniq-withSink {
+  right: 0;
+  bottom: 0;
+  width: 60%;
+  z-index: 4;
+}
+
+/* BUBBLES */
+.bubble {
+  position:absolute;
+  width: 120px;
+  height: 120px;
+  display: grid;
+  place-items: center;
+  z-index: 1;
+  will-change: transform, opacity;
+}
+
+.bubble img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.bubble span {
+  position: absolute;
+  width: 100%;
+  text-align: center;
+  color: #fff;
+  font-family: var(--font-exo);
+  font-weight: 950;
+  font-size: 36px;
+  line-height: 1.05;
+  transform: translateY(2px);
+}
+
+/* bubble positions (Ð½Ð°Ð´ ÑÑŠÐ¾Ñ‚Ð²ÐµÑ‚Ð½Ð¸Ñ‚Ðµ Ð¿Ñ€Ð¾Ð´ÑƒÐºÑ‚Ð¸) */
+.bubble-uniq {
+  right: 47%;
+  bottom: 70%;
+  width: 180px;
+}
+
+.bubble-uniqbox {
+  right: 0%;
+  bottom: 70%;
+  width: 180px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-bg,
+  .hero-el,
+  .hero-btn,
+  .hero-dot,
+  .el-uniq-products img,
+  .bubble {
+    transition: none !important;
+    animation: none !important;
+  }
+}
