@@ -7,6 +7,7 @@ use App\Services\CartService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
 class CartController extends Controller
@@ -14,9 +15,14 @@ class CartController extends Controller
     /**
      * Resolve CartService using the session_id query param sent by the React client.
      * This bypasses Laravel's cookie-bound session so cross-device carts work correctly.
+     * If user is authenticated, ignore session_id and use user cart.
      */
     private function getCartService(Request $request): CartService
     {
+        if (Auth::check()) {
+            return new CartService(null);
+        }
+
         $sessionId = $request->query('session_id')
             ?: $request->input('session_id')
             ?: $request->query('sessionId')

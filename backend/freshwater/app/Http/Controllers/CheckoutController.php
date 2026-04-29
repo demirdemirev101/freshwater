@@ -13,6 +13,7 @@ use App\Services\OrderService;
 use App\Services\SettingsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
 class CheckoutController extends Controller
@@ -20,9 +21,14 @@ class CheckoutController extends Controller
     /**
      * Resolve CartService using the session_id/sessionId sent by the React client.
      * This keeps checkout pricing aligned with the cart endpoints instead of falling back to Laravel's cookie session ID.
+     * If user is authenticated, ignore session_id and use user cart.
      */
     private function getCartService(Request $request): CartService
     {
+        if (Auth::check()) {
+            return new CartService(null);
+        }
+
         $sessionId = $request->query('session_id')
             ?: $request->input('session_id')
             ?: $request->query('sessionId')

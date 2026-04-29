@@ -22,5 +22,3 @@ Route::post('/checkout', [CheckoutController::class, 'store']);
 
 Route::get('/products', [ProductApiController::class, 'index']);
 
-Route::post('/login', [AuthController::class, 'login']);
-Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth');
