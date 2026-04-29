@@ -44,8 +44,8 @@ return [
         // За реална среда: 'https://ee.econt.com/services'
         'track_url' => env('ECONT_TRACK_URL', null),
         
-        'username' => env('ECONT_USERNAME'),
-        'password' => env('ECONT_PASSWORD'),
+        'username' => env('ECONT_USERNAME', 'test_username'),
+        'password' => env('ECONT_PASSWORD', 'test_password'),
         
         // Данни на изпращача
         'sender' => [

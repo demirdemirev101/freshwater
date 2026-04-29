@@ -38,6 +38,15 @@ class ItemsRelationManager extends RelationManager
         $this->getOwnerRecord()?->refresh();
     }
 
+    public function getTable(): Table
+    {
+        if (! isset($this->table)) {
+            $this->bootedInteractsWithTable();
+        }
+
+        return parent::getTable();
+    }
+
     private function isLocked(): bool
     {
         $order = $this->getOwnerRecord();

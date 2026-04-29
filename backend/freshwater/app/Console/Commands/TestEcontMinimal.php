@@ -41,8 +41,8 @@ class TestEcontMinimal extends Command
         $shipment->pack_count = 1;
         $shipment->delivery_type = 'address';
         $shipment->office_code = null;
-        $shipment->cash_on_delivery = 0;
-        $shipment->declared_value = 0;
+        $shipment->cash_on_delivery = 100.00;
+        $shipment->declared_value = 5.00;
 
         if ($this->option('office')) {
             $shipment->delivery_type = 'office';

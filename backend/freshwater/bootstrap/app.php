@@ -1,6 +1,7 @@
 <?php
 
 use App\Exceptions\CheckoutException;
+use App\Http\Middleware\CorsMiddleware;
 use App\Http\Middleware\DisableCartCsrf;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -15,9 +16,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->use([CorsMiddleware::class]);
         $middleware->validateCsrfTokens(except: [
             'cart/*',
-            'checkout',
+            'checkout/*',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

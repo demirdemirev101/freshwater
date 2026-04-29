@@ -31,6 +31,15 @@ class ShipmentsRelationManager extends RelationManager
         $this->resetTable();
     }
 
+    public function getTable(): Table
+    {
+        if (! isset($this->table)) {
+            $this->bootedInteractsWithTable();
+        }
+
+        return parent::getTable();
+    }
+
     public function table(Table $table): Table
     {
         return $table

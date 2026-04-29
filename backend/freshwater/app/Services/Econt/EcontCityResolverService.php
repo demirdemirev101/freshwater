@@ -7,42 +7,33 @@ use Illuminate\Support\Facades\Log;
 
 class EcontCityResolverService
 {
+    private const ALL_OFFICES_CACHE_KEY = 'econt_offices_all';
+
     public function __construct(
         private EcontService $econtService
     ) {}
 
     /**
      * Attempts to resolve an Econt city ID based on the provided city name and optional post code.
-     * The resolution process prioritizes:
-     * 1 Exact name + post code match
-     * 2 Exact name + region name match
-     * 3 Exact name + courier-enabled match
-     * If no unique match is found, null is returned. Results are cached for 30 days to optimize performance.
-     * @param string $cityName The name of the city to resolve.
-     * @param string|null $postCode Optional post code to assist in resolution.
-     * @return int|null The resolved city ID or null if resolution fails.
-     * @throws \Exception If the Econt API call fails or returns an unexpected response.
+     * This method currently relies on the remote cities nomenclature, which may be too large for normal checkout lookups.
+     * Keep it for explicit city-ID use cases, but do not use it in the office lookup flow.
      */
     public function getCityId(string $cityName, ?string $postCode = null): ?int
     {
-        $normalizedName = mb_strtolower(trim($cityName));
+        $normalizedName = $this->normalizeCityName($cityName);
         $normalizedPostCode = $postCode ? trim($postCode) : null;
 
-        // Generate a cache key based on the normalized city name and post code
         $cacheKey = 'econt_city_' . md5($normalizedName . '_' . $normalizedPostCode);
 
         return Cache::remember($cacheKey, now()->addDays(30), function () use ($cityName, $normalizedName, $normalizedPostCode) {
             $cities = $this->econtService->getCities($cityName);
 
-            Log::info('🔍 Resolving Econt city', [
+            Log::info('Resolving Econt city', [
                 'city' => $cityName,
                 'postCode' => $normalizedPostCode,
                 'count' => count($cities),
             ]);
 
-            /**
-             * 1️⃣ Exact name + postCode (TOP PRIORITY)
-             */
             if ($normalizedPostCode) {
                 foreach ($cities as $city) {
                     if (
@@ -50,50 +41,30 @@ class EcontCityResolverService
                         isset($city['postCode']) &&
                         $city['postCode'] === $normalizedPostCode
                     ) {
-                        Log::info('✅ City resolved by name + postCode', [
-                            'city' => $city['name'],
-                            'postCode' => $city['postCode'],
-                            'id' => $city['id'],
-                        ]);
                         return (int) $city['id'];
                     }
                 }
             }
 
-            /**
-             * 2️⃣ Exact name + regionName
-             */
             foreach ($cities as $city) {
                 if (
                     mb_strtolower($city['name']) === $normalizedName &&
-                    !empty($city['regionName'])
+                    ! empty($city['regionName'])
                 ) {
-                    Log::info('⚠️ City resolved by region', [
-                        'city' => $city['name'],
-                        'region' => $city['regionName'],
-                        'id' => $city['id'],
-                    ]);
                     return (int) $city['id'];
                 }
             }
 
-            /**
-             * 3️⃣ Exact name + courier-enabled
-             */
             foreach ($cities as $city) {
                 if (
                     mb_strtolower($city['name']) === $normalizedName &&
                     ($city['expressCityDeliveries'] ?? false)
                 ) {
-                    Log::warning('⚠️ City resolved by courier availability', [
-                        'city' => $city['name'],
-                        'id' => $city['id'],
-                    ]);
                     return (int) $city['id'];
                 }
             }
 
-            Log::error('❌ Econt city could not be uniquely resolved', [
+            Log::error('Econt city could not be uniquely resolved', [
                 'searched' => $cityName,
                 'postCode' => $normalizedPostCode,
             ]);
@@ -103,33 +74,75 @@ class EcontCityResolverService
     }
 
     /**
-     * Retrieves a list of Econt offices for a given city name. The method first resolves the city ID using the getCityId method.
-     * If the city ID cannot be resolved, an empty array is returned. Otherwise,
-     *  the offices are fetched from the Econt API and cached for 7 days to optimize performance.
-     *  Any errors during the API call are logged and an empty array is returned in case of failure.
-     * @param string $cityName The name of the city for which to retrieve offices.
-     * @return array An array of offices associated with the resolved city ID, or an empty array if the city cannot be resolved or if the API call fails.
+     * Retrieves a list of Econt offices for a given city name.
+     * To avoid loading the oversized cities nomenclature on every checkout request,
+     * this flow uses the offices nomenclature and filters it locally by city name.
      */
     public function getOffices(string $cityName): array
     {
-        $cityId = $this->getCityId($cityName);
+        $normalizedCityName = $this->normalizeCityName($cityName);
 
-        if (!$cityId) {
+        if ($normalizedCityName === '') {
             return [];
         }
 
-        $cacheKey = "econt_offices_{$cityId}";
+        $cacheKey = 'econt_offices_city_' . md5($normalizedCityName);
 
-        return Cache::remember($cacheKey, now()->addDays(7), function () use ($cityId) {
+        return Cache::remember($cacheKey, now()->addDays(7), function () use ($cityName, $normalizedCityName) {
             try {
-                return $this->econtService->getOffices($cityId);
+                $allOffices = Cache::remember(self::ALL_OFFICES_CACHE_KEY, now()->addDay(), function () {
+                    return $this->econtService->getOffices();
+                });
+
+                $offices = array_values(array_filter($allOffices, function ($office) use ($normalizedCityName) {
+                    return is_array($office) && $this->officeMatchesCity($office, $normalizedCityName);
+                }));
+
+                Log::info('Econt offices resolved by city name', [
+                    'city' => $cityName,
+                    'count' => count($offices),
+                ]);
+
+                return $offices;
             } catch (\Throwable $e) {
-                Log::error('❌ Econt offices lookup failed', [
-                    'city_id' => $cityId,
+                Log::error('Econt offices lookup failed', [
+                    'city' => $cityName,
                     'error' => $e->getMessage(),
                 ]);
+
                 return [];
             }
         });
+    }
+
+    private function officeMatchesCity(array $office, string $normalizedCityName): bool
+    {
+        $candidates = [
+            $office['cityName'] ?? null,
+            $office['city'] ?? null,
+            data_get($office, 'address.city.name'),
+            data_get($office, 'address.cityName'),
+        ];
+
+        foreach ($candidates as $candidate) {
+            if (! is_string($candidate) || trim($candidate) === '') {
+                continue;
+            }
+
+            if ($this->normalizeCityName($candidate) === $normalizedCityName) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function normalizeCityName(?string $cityName): string
+    {
+        $normalized = mb_strtolower(trim((string) $cityName));
+        $normalized = preg_replace('/^(гр\\.?|град)\s+/u', '', $normalized) ?? $normalized;
+        $normalized = preg_replace('/\s+/u', ' ', $normalized) ?? $normalized;
+
+        return $normalized;
     }
 }

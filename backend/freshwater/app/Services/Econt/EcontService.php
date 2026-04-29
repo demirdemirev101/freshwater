@@ -296,16 +296,21 @@ class EcontService
      * and do not cause unhandled exceptions in the application. If the API call fails or the expected data is not present in the response,
      * the method returns an empty array.
      */
-    public function getOffices(int $cityId): array
+    public function getOffices(?int $cityId = null): array
     {
+        $payload = [
+            'countryCode' => 'BGR',
+        ];
+
+        if ($cityId !== null) {
+            $payload['cityID'] = $cityId;
+        }
+
         $response = Http::withOptions([
                 'verify' => config('services.econt.verify_ssl'),
             ])
             ->withBasicAuth($this->username, $this->password)
-            ->post("{$this->baseUrl}/Nomenclatures/NomenclaturesService.getOffices.json", [
-                'countryCode' => 'BGR',
-                'cityID' => $cityId,
-            ]);
+            ->post("{$this->baseUrl}/Nomenclatures/NomenclaturesService.getOffices.json", $payload);
 
         if ($response->successful()) {
             $data = $this->decodeJsonResponse($response, 'getOffices');

@@ -27,20 +27,6 @@ class SendShipmentToEcont implements ShouldQueue
     // For example, if Econt API is down, we might want to wait a bit before retrying to avoid hitting it too frequently
     public $backoff = [30, 60, 120];
 
-    /*
-    * Handles the event when an order is ready for shipment and sends the shipment details to Econt.
-    * - It first checks if the shipment is in 'created' status to ensure it's ready to be sent.
-    * - It uses an atomic update to change the status to 'pending' to prevent multiple processes from sending the same shipment concurrently.
-    * - If Econt integration is disabled (e.g., in local environments), it updates the shipment status to 'confirmed' without sending and logs this action.
-    * - It prepares the payload using a mapper and sends it to Econt, then processes the response to update the shipment record accordingly.
-    * - In case of errors, it updates the shipment status to 'error' and logs the error details, allowing for retries based on the defined attempts
-    *    and backoff strategy.
-    * - If the job ultimately fails after all retries, it marks the shipment as 'error' and dispatches a notification job for the administrator.
-    * - It also dispatches a job to send a tracking email to the customer once the shipment is confirmed by Econt.
-    * Atomic guard is implemented here to prevent double sending of the same shipment, which can happen if multiple events are fired for the same order
-    *  or if the job is retried due to transient errors. By checking the status and using an atomic update, we ensure that only one process
-    *  can send the shipment to Econt.
-    */
     public function handle($event): void
     {
         $order = Order::with('shipment')->findOrFail($event->orderId);
@@ -60,6 +46,7 @@ class SendShipmentToEcont implements ShouldQueue
         if (!config('services.econt.enabled')) {
             $shipment->update([
                 'status' => 'confirmed',
+                'tracking_number' => 'TEST-' . $shipment->id,
                 'carrier_response' => [
                     'message' => 'Econt disabled (local environment)',
                 ],
@@ -69,6 +56,9 @@ class SendShipmentToEcont implements ShouldQueue
             Log::info('Econt skipped (disabled)', [
                 'shipment_id' => $shipment->id,
             ]);
+
+            // Dispatch tracking email
+            dispatch(new SendTrackingEmailJob($order->id));
 
             return;
         }

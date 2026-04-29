@@ -16,6 +16,6 @@ class ClearCartAfterOrder
      */
     public function handle(OrderPlaced $event): void
     {
-        app(CartService::class)->clear();
+        (new CartService($event->sessionId))->clear();
     }
 }

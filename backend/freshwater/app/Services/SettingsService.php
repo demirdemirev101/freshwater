@@ -7,6 +7,7 @@ use App\Models\Setting;
 use App\Models\Shipment;
 use App\Services\Econt\EcontPayloadMapper;
 use App\Services\Econt\EcontService;
+use App\Support\EcontDeliveryTypeResolver;
 use Illuminate\Support\Facades\Log;
 
 class SettingsService
@@ -51,6 +52,31 @@ class SettingsService
         }
 
         $order->shipping_price = $this->calculateEcontShipping($order);
+    }
+
+    /**
+     * Calculate a live checkout estimate without deferring COD/bank transfer pricing.
+     * This is used only for previewing shipping in the checkout UI.
+     */
+    public function estimateShipping(Order $order): float
+    {
+        $settings = Setting::current();
+
+        if (! $settings->delivery_enabled) {
+            return 0.0;
+        }
+
+        if ($settings->free_delivery_over !== null &&
+            $order->subtotal >= $settings->free_delivery_over
+        ) {
+            return 0.0;
+        }
+
+        if (! config('services.econt.enabled')) {
+            return 0.0;
+        }
+
+        return $this->calculateEcontShipping($order);
     }
 
     /**
@@ -131,13 +157,10 @@ class SettingsService
      */
     private function determineDeliveryType(Order $order): string
     {
-        if (! empty($order->econt_office_code)) {
-            return str_starts_with($order->econt_office_code, 'APM')
-                ? 'apm'
-                : 'office';
-        }
-
-        return 'address';
+        return EcontDeliveryTypeResolver::resolve(
+            $order->shipping_method ?? null,
+            $order->econt_office_code ?? null,
+        );
     }
     /**
      * Calculate the number of packs needed for the given order based on the total quantity of items. 

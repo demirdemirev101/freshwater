@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Events\OrderPlaced;
 use App\Jobs\CalculateBankTransferShippingJob;
 use App\Models\Order;
+use App\Models\Product;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -55,6 +56,7 @@ class OrderService
     public function create(array $data = []): Order
     {
         return DB::transaction(function () use ($data) {
+            $shippingMethod = $data['shipping_method'] ?? 'address';
 
             $order = Order::create([
                 // If the user is authenticated, associate the order with the user's ID. Otherwise, the order will be created without a user association.
@@ -63,9 +65,13 @@ class OrderService
                 'customer_email'    => $data['customer_email'],
                 'customer_phone'    => $data['customer_phone'] ?? null,
 
-                'shipping_address'  => $data['shipping_address'],
+                'shipping_address'  => $data['shipping_address'] ?? '',
                 'shipping_city'     => $data['shipping_city'],
                 'shipping_postcode' => $data['shipping_postcode'] ?? null,
+                'shipping_method'   => $shippingMethod,
+                'econt_office_code' => $shippingMethod === 'address'
+                    ? null
+                    : ($data['econt_office_code'] ?? null),
                 'holiday_delivery_day' => $data['holiday_delivery_day'] ?? null,
 
                 'status'            => 'pending',
@@ -102,7 +108,74 @@ class OrderService
             $this->paymentService->handle($order);
 
             // ✅ ЕДИН event, ясно и чисто
-            OrderPlaced::dispatch($order->id);
+            OrderPlaced::dispatch($order->id, $data['session_id'] ?? $data['sessionId'] ?? null);
+
+            if (in_array($order->payment_method, ['bank_transfer', 'cod'], true)) {
+                dispatch(new CalculateBankTransferShippingJob($order->id));
+            }
+
+            return $order;
+        });
+    }
+
+    public function createFromItems(array $data = []): Order
+    {
+        return DB::transaction(function () use ($data) {
+            $shippingMethod = $data['shipping_method'] ?? 'address';
+
+            $order = Order::create([
+                // If the user is authenticated, associate the order with the user's ID. Otherwise, the order will be created without a user association.
+                'user_id'           => Auth::id(),
+                'customer_name'     => $data['customer_name'],
+                'customer_email'    => $data['customer_email'],
+                'customer_phone'    => $data['customer_phone'] ?? null,
+
+                'shipping_address'  => $data['shipping_address'] ?? '',
+                'shipping_city'     => $data['shipping_city'],
+                'shipping_postcode' => $data['shipping_postcode'] ?? null,
+                'shipping_method'   => $shippingMethod,
+                'econt_office_code' => $shippingMethod === 'address'
+                    ? null
+                    : ($data['econt_office_code'] ?? null),
+                'holiday_delivery_day' => $data['holiday_delivery_day'] ?? null,
+
+                'status'            => 'pending',
+
+                'subtotal'          => 0,
+                'shipping_price'    => 0,
+                'total'             => 0,
+
+                'payment_method'    => $data['payment_method'],
+                'payment_status'    => 'pending',
+
+                'notes'             => $data['notes'] ?? null,
+            ]);
+
+            $subtotal = 0;
+            foreach ($data['items'] as $itemData) {
+                $product = Product::find($itemData['product_id']);
+                $productName = $product ? $product->name : 'Unknown Product';
+                $total = $itemData['price'] * $itemData['quantity'];
+                $subtotal += $total;
+
+                $order->items()->create([
+                    'product_id'   => $itemData['product_id'],
+                    'product_name' => $productName,
+                    'price'        => $itemData['price'],
+                    'quantity'     => $itemData['quantity'],
+                    'total'        => $total,
+                ]);
+            }
+
+            $order->subtotal = $subtotal;
+            $this->settingsService->applyTotals($order);
+            $order->save();
+
+            // ⚠️ PaymentService вътре в транзакцията (OK за сега)
+            $this->paymentService->handle($order);
+
+            // ✅ ЕДИН event, ясно и чисто
+            OrderPlaced::dispatch($order->id, $data['session_id'] ?? $data['sessionId'] ?? null);
 
             if (in_array($order->payment_method, ['bank_transfer', 'cod'], true)) {
                 dispatch(new CalculateBankTransferShippingJob($order->id));

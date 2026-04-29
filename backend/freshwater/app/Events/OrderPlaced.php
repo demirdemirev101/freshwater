@@ -12,7 +12,7 @@ class OrderPlaced
     use Dispatchable, SerializesModels;
 
 
-    public function __construct(public int $orderId)
+    public function __construct(public int $orderId, public ?string $sessionId = null)
     {
     }
 }
