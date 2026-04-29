@@ -19,7 +19,7 @@ class AuthController extends Controller
             'email' => ['sometimes', 'required_without:username', 'email'],
             'username' => ['sometimes', 'required_without:email', 'string'],
             'password' => ['required', 'string'],
-            'session_id' => ['sometimes', 'string'],
+            'sessionId' => ['sometimes', 'string'],
         ]);
 
         $user = null;
@@ -34,9 +34,9 @@ class AuthController extends Controller
             return response()->json(['message' => 'Invalid credentials'], 401);
         }
 
-        if (! empty($validated['session_id'])) {
+        if (! empty($validated['sessionId'])) {
             Auth::setUser($user);
-            (new CartService($validated['session_id']))->mergeGuestCartToUser();
+            (new CartService($validated['sessionId']))->mergeGuestCartToUser();
         }
 
         return response()->json([
