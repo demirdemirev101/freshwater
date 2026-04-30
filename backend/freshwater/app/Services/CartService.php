@@ -7,6 +7,7 @@ use App\Models\Product;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Validation\ValidationException;
 
 class CartService
 {
@@ -58,9 +59,10 @@ class CartService
 
     public function update(Product $product, int $quantity): void
     {
-        if ($quantity <= 0) {
-            $this->remove($product);
-            return;
+        if ($quantity < 1) {
+            throw ValidationException::withMessages([
+                'quantity' => 'The quantity must be at least 1.',
+            ]);
         }
 
         $price = $product->sale_price ?? $product->price;

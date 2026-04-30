@@ -36,7 +36,7 @@ class CartUpdateResponseTest extends TestCase
             ->assertJsonPath('subtotal', 79.6);
     }
 
-    public function test_updating_quantity_to_zero_removes_the_product_from_the_cart(): void
+    public function test_update_route_rejects_quantity_below_one(): void
     {
         $product = Product::create([
             'name' => 'Removed Product',
@@ -54,13 +54,12 @@ class CartUpdateResponseTest extends TestCase
 
         $this->patchJson("/api/cart/update/{$product->id}?session_id={$sessionId}", [
             'quantity' => 0,
-        ])->assertOk()
-            ->assertJsonPath('session_id', $sessionId)
-            ->assertJsonCount(0, 'items')
-            ->assertJsonPath('subtotal', 0);
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors('quantity');
 
-        $this->assertDatabaseMissing('cart_items', [
+        $this->assertDatabaseHas('cart_items', [
             'product_id' => $product->id,
+            'quantity' => 1,
         ]);
     }
 }
