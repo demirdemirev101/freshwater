@@ -15,10 +15,6 @@ class OrderForm
 {
     public static function configure(Schema $schema): Schema
     {
-        $isLocked = fn ($record) => $record
-            && ! ($record->status === 'pending_review'
-                || ($record->payment_method === 'bank_transfer' && $record->payment_status !== 'paid'));
-
         return $schema
             ->components([
                 Select::make('user_id')
@@ -42,34 +38,45 @@ class OrderForm
                         $set('customer_phone', $user->phone);
                     })
                     ->visible(fn ($record) => (bool) $record->user_id)
-                    ->disabled($isLocked),
+                    ->disabled(),
 
                 TextInput::make('customer_name')
                     ->label('Име на клиента')
-                    ->disabled(fn ($record, $get) => $isLocked($record) || (bool) $get('user_id')),
+                    ->disabled(),
 
                 TextInput::make('customer_email')
                     ->label('Имейл')
-                    ->disabled(fn ($record, $get) => $isLocked($record) || (bool) $get('user_id')),
+                    ->disabled(),
 
                 TextInput::make('customer_phone')
                     ->label('Телефон')
                     ->tel()
-                    ->disabled(fn ($record, $get) => $isLocked($record) || (bool) $get('user_id')),
-
-                TextInput::make('shipping_address')
-                    ->label('Адрес за доставка')
-                    ->required()
-                    ->disabled($isLocked),
+                    ->disabled(),
 
                 TextInput::make('shipping_city')
                     ->label('Град за доставка')
                     ->required()
-                    ->disabled($isLocked),
+                    ->disabled(),
+
+                TextInput::make('econt_office_code')
+                    ->label('Код на офис Еконт')
+                    ->required(fn($get) => $get('shipping_method') !== 'address')
+                    ->visible(fn($get) => $get('shipping_method') !== 'address')
+                    ->disabled(),
+
+                TextInput::make('shipping_address')
+                    ->label(fn ($get) => $get('shipping_method') === 'address'
+                        ? 'Адрес за доставка'
+                        : 'Офис на Еконт'
+                    )
+                    ->visible()
+                    ->disabled(),
 
                 TextInput::make('shipping_postcode')
                     ->label('Пощенски код')
-                    ->disabled($isLocked),
+                    ->visible(fn($get) => $get('econt_office_code' !== null))
+                    ->required(fn($get) => $get('econt_office_code' !== null))
+                    ->disabled(),
 
                 Select::make('status')
                     ->label('Статус на поръчката')
