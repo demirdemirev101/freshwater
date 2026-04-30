@@ -9,7 +9,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\PersonalAccessToken;
+use Illuminate\Database\Seeder;
 
 class AuthController extends Controller
 {
@@ -43,6 +45,34 @@ class AuthController extends Controller
             'token' => $user->createToken('api-token')->plainTextToken,
             'user' => $this->transformUser($user),
         ]);
+    }
+
+    public function register(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'name'  => 'string|required|max:50',
+            'email' => 'email|required|max:255',
+            'phone' => 'string|required|max:10',
+            'password' => 'string|required|min:12',
+            'sessionId' => 'sometimes|string'
+        ]);
+
+        $user = User::create([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'phone' => $validated['phone'],
+            'password'=> Hash::make($validated['password'])
+        ]);
+
+        if(!empty($validated['sessionId'])){
+            Auth::setUser($user);
+            (new CartService($validated['sessionId']))->mergeGuestCartToUser();
+        }
+        
+        return response()->json([
+            'token' => $user->createToken('api-token')->plainTextToken,
+            'user' => $this->transformUser($user),
+        ], 201);
     }
 
     public function me(Request $request): JsonResponse
