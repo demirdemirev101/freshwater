@@ -15,9 +15,30 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class CheckoutController extends Controller
 {
+    private function authenticateBearerToken(Request $request): void
+    {
+        if (Auth::check()) {
+            return;
+        }
+
+        $token = $request->bearerToken();
+
+        if (! $token) {
+            return;
+        }
+
+        $accessToken = PersonalAccessToken::findToken($token);
+        $user = $accessToken?->tokenable;
+
+        if ($user) {
+            Auth::setUser($user);
+        }
+    }
+
     /**
      * Resolve CartService using the session_id/sessionId sent by the React client.
      * This keeps checkout pricing aligned with the cart endpoints instead of falling back to Laravel's cookie session ID.
@@ -25,6 +46,8 @@ class CheckoutController extends Controller
      */
     private function getCartService(Request $request): CartService
     {
+        $this->authenticateBearerToken($request);
+
         if (Auth::check()) {
             return new CartService(null);
         }
@@ -204,6 +227,7 @@ class CheckoutController extends Controller
             Log::warning('calculate shipping skipped because cart is empty', [
                 'requested_session_id' => $requestedSessionId,
                 'resolved_session_id' => $cartService->getSessionId(),
+                'user_id' => Auth::id(),
                 'shipping_method' => $validated['shipping_method'],
                 'shipping_city' => $validated['shipping_city'],
             ]);
@@ -221,6 +245,7 @@ class CheckoutController extends Controller
         Log::info('calculate shipping price', [
             'requested_session_id' => $requestedSessionId,
             'resolved_session_id' => $cartService->getSessionId(),
+            'user_id' => Auth::id(),
             'subtotal' => $effectiveSubtotal,
             'shipping_price' => $tempOrder->shipping_price ?? 0.0,
             'order_id' => $tempOrder->id,
@@ -244,6 +269,8 @@ class CheckoutController extends Controller
      */
     public function store(Request $request, OrderService $orderService) 
     {
+        $this->authenticateBearerToken($request);
+
         $validated = $request->validate([
             'customer_name'     => 'required|string',
             'customer_email'    => 'required|email',

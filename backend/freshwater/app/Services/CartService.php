@@ -6,6 +6,7 @@ use App\Models\Cart;
 use App\Models\Product;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Validation\ValidationException;
 
@@ -114,6 +115,9 @@ class CartService
     public function mergeGuestCartToUser(): void
     {
         if (!Auth::check()) {
+            Log::warning('Guest cart merge skipped because no user is authenticated', [
+                'session_id' => $this->sessionId,
+            ]);
             return;
         }
 
@@ -121,6 +125,10 @@ class CartService
         $userCart  = Cart::where('user_id', Auth::id())->first();
 
         if (!$guestCart) {
+            Log::info('Guest cart merge skipped because guest cart was not found', [
+                'session_id' => $this->sessionId,
+                'user_id' => Auth::id(),
+            ]);
             return;
         }
 
@@ -155,6 +163,8 @@ class CartService
             $guestCart->items()->delete();
             $guestCart->delete();
         });
+
+        Log::info("Merged guest cart (session_id: {$this->sessionId}) into user cart (user_id: " . Auth::id() . ")");
     }
 
     public function hasGuestCart(): bool

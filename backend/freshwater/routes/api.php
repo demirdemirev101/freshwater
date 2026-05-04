@@ -5,6 +5,7 @@ use App\Http\Controllers\CheckoutController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\ProductApiController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ContactController;
 
 Route::get('/products', [ProductApiController::class, 'index']);
 
@@ -19,11 +20,13 @@ Route::get('/checkout/econt-offices', [CheckoutController::class, 'econtOffices'
 Route::post('/checkout', [CheckoutController::class, 'store']);
 Route::post('/checkout/calculate-shipping', [CheckoutController::class, 'calculateShipping']);
 
+Route::post('/contact', [ContactController::class, 'store']);
 
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
 
 Route::middleware('auth:sanctum')->group(function () {
+    // User routes
     Route::get('/me', [AuthController::class, 'me']);
     Route::get('/user', [AuthController::class, 'me']);
     Route::post('/logout', [AuthController::class, 'logout']);
