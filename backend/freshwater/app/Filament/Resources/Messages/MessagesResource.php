@@ -22,7 +22,7 @@ class MessagesResource extends Resource
 {
     protected static ?string $model = Contact::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::ArchiveBoxArrowDown;
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-envelope';
 
         protected static ?string $navigationLabel = 'Съобщения';
         protected static ?string $modelLabel = 'Съобщение';
