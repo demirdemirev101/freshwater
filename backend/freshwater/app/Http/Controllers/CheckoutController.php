@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Log;
 class CheckoutController extends Controller
 {
     /**
-     * Resolve CartService using the session_id/sessionId sent by the React client.
+     * Resolve CartService using the session_id sent by the React client.
      * This keeps checkout pricing aligned with the cart endpoints instead of falling back to Laravel's cookie session ID.
      * If user is authenticated, ignore session_id and use user cart.
      */
@@ -29,12 +29,22 @@ class CheckoutController extends Controller
             return new CartService(null);
         }
 
-        $sessionId = $request->query('session_id')
-            ?: $request->input('session_id')
-            ?: $request->query('sessionId')
-            ?: $request->input('sessionId');
+        return new CartService($this->frontendCartSessionId($request));
+    }
 
-        return new CartService($sessionId ?: null);
+    private function frontendCartSessionId(Request $request): ?string
+    {
+        $sessionId = $request->input('session_id')
+            ?? $request->query('session_id')
+            ?? $request->header('X-Cart-Session-Id');
+
+        if (! is_scalar($sessionId)) {
+            return null;
+        }
+
+        $sessionId = trim((string) $sessionId);
+
+        return $sessionId !== '' ? $sessionId : null;
     }
 
     /**
@@ -164,17 +174,13 @@ class CheckoutController extends Controller
             'econt_office_code' => 'required_if:shipping_method,office,apm|string|nullable',
             'payment_method' => 'nullable|string',
             'session_id' => 'sometimes|string',
-            'sessionId' => 'sometimes|string',
             'items' => 'sometimes|array|min:1',
             'items.*.product_id' => 'required_with:items|integer|exists:products,id',
             'items.*.quantity' => 'required_with:items|integer|min:1',
         ]);
 
         $cartService = $this->getCartService($request);
-        $requestedSessionId = $request->query('session_id')
-            ?: $request->input('session_id')
-            ?: $request->query('sessionId')
-            ?: $request->input('sessionId');
+        $requestedSessionId = $this->frontendCartSessionId($request);
         $cartItems = $cartService->items();
         $requestItems = ! empty($validated['items'])
             ? $this->buildItemsFromRequest($validated['items'])
@@ -257,17 +263,13 @@ class CheckoutController extends Controller
             'econt_office_code' => 'required_if:shipping_method,office,apm|string',
             'payment_method'    => 'required|string',
             'session_id'       => 'sometimes|string',
-            'sessionId'        => 'sometimes|string',
             'notes'             => 'nullable|string',
             'items'             => 'required|array|min:1',
             'items.*.product_id' => 'required|integer|exists:products,id',
             'items.*.quantity'   => 'required|integer|min:1',
             'items.*.price'      => 'required|numeric|min:0',
         ]);
-        $validated['session_id'] = $request->query('session_id')
-            ?: $request->input('session_id')
-            ?: $request->query('sessionId')
-            ?: $request->input('sessionId');
+        $validated['session_id'] = $this->frontendCartSessionId($request);
 
         try {
             $order = $orderService->createFromItems($validated);

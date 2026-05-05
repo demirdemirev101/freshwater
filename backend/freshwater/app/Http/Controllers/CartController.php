@@ -3,39 +3,20 @@
 namespace App\Http\Controllers;
  
 use App\Models\Product;
-use App\Models\User;
 use App\Services\CartService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 class CartController extends Controller
 {
-    private function cartSessionFallbackCacheKey(Request $request): string
-    {
-        return 'cart-session-fallback:' . sha1(($request->ip() ?? 'unknown') . '|' . (string) $request->userAgent());
-    }
-
-    private function cartSessionUserCacheKey(Request $request, string $sessionId): string
-    {
-        return 'cart-session-user:' . sha1(($request->ip() ?? 'unknown') . '|' . (string) $request->userAgent() . '|' . $sessionId);
-    }
-
     private function frontendCartSessionId(Request $request): ?string
     {
-        $sessionId = $request->query('session_id')
-            ?: $request->input('session_id')
-            ?: $request->query('sessionId')
-            ?: $request->input('sessionId')
-            ?: $request->query('cartSessionId')
-            ?: $request->input('cartSessionId')
-            ?: $request->query('cart_session_id')
-            ?: $request->input('cart_session_id')
-            ?: $request->header('X-Cart-Session-Id')
-            ?: $request->header('X-Cart-Session');
+        $sessionId = $request->input('session_id')
+            ?? $request->query('session_id')
+            ?? $request->header('X-Cart-Session-Id');
 
         if (! is_scalar($sessionId)) {
             return null;
@@ -46,25 +27,6 @@ class CartController extends Controller
         return $sessionId !== '' ? $sessionId : null;
     }
 
-    private function authenticateRememberedCartUser(Request $request, ?string $sessionId): void
-    {
-        if (Auth::check() || $sessionId === null) {
-            return;
-        }
-
-        $userId = Cache::store('file')->get($this->cartSessionUserCacheKey($request, $sessionId));
-
-        if (! is_numeric($userId)) {
-            return;
-        }
-
-        $user = User::find((int) $userId);
-
-        if ($user) {
-            Auth::setUser($user);
-        }
-    }
-
     /**
      * Resolve CartService using the session_id query param sent by the React client.
      * This bypasses Laravel's cookie-bound session so cross-device carts work correctly.
@@ -73,7 +35,6 @@ class CartController extends Controller
     private function getCartService(Request $request): CartService
     {
         $frontendSessionId = $this->frontendCartSessionId($request);
-        $this->authenticateRememberedCartUser($request, $frontendSessionId);
 
         if (Auth::check()) {
             return new CartService(null);
@@ -86,14 +47,6 @@ class CartController extends Controller
     {
         $frontendSessionId = $this->frontendCartSessionId($request);
         $itemsCount = $cart->items()->count();
-
-        if (! Auth::check() && $frontendSessionId !== null && $itemsCount > 0) {
-            Cache::store('file')->put(
-                $this->cartSessionFallbackCacheKey($request),
-                $frontendSessionId,
-                now()->addMinutes(30)
-            );
-        }
 
         Log::info($message, array_merge([
             'frontend_session_id' => $frontendSessionId,
