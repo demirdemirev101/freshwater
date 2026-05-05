@@ -11,7 +11,6 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
-use Laravel\Sanctum\PersonalAccessToken;
 
 class CartController extends Controller
 {
@@ -47,26 +46,6 @@ class CartController extends Controller
         return $sessionId !== '' ? $sessionId : null;
     }
 
-    private function authenticateBearerToken(Request $request): void
-    {
-        if (Auth::check()) {
-            return;
-        }
-
-        $token = $request->bearerToken();
-
-        if (! $token) {
-            return;
-        }
-
-        $accessToken = PersonalAccessToken::findToken($token);
-        $user = $accessToken?->tokenable;
-
-        if ($user) {
-            Auth::setUser($user);
-        }
-    }
-
     private function authenticateRememberedCartUser(Request $request, ?string $sessionId): void
     {
         if (Auth::check() || $sessionId === null) {
@@ -93,7 +72,6 @@ class CartController extends Controller
      */
     private function getCartService(Request $request): CartService
     {
-        $this->authenticateBearerToken($request);
         $frontendSessionId = $this->frontendCartSessionId($request);
         $this->authenticateRememberedCartUser($request, $frontendSessionId);
 

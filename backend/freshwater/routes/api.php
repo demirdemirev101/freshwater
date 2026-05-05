@@ -9,16 +9,18 @@ use App\Http\Controllers\ContactController;
 
 Route::get('/products', [ProductApiController::class, 'index']);
 
-// Cart routes
-Route::get('/cart', [CartController::class, 'show']);
-Route::post('/cart/add/{product}', [CartController::class, 'store']);
-Route::patch('/cart/update/{product}', [CartController::class, 'update']);
-Route::delete('/cart/delete/{product}', [CartController::class, 'remove']);
-Route::delete('/cart', [CartController::class, 'clear']);
+Route::middleware('optional.sanctum')->group(function () {
+    // Cart routes
+    Route::get('/cart', [CartController::class, 'show']);
+    Route::post('/cart/add/{product}', [CartController::class, 'store']);
+    Route::patch('/cart/update/{product}', [CartController::class, 'update']);
+    Route::delete('/cart/delete/{product}', [CartController::class, 'remove']);
+    Route::delete('/cart', [CartController::class, 'clear']);
 
-Route::get('/checkout/econt-offices', [CheckoutController::class, 'econtOffices']);
-Route::post('/checkout', [CheckoutController::class, 'store']);
-Route::post('/checkout/calculate-shipping', [CheckoutController::class, 'calculateShipping']);
+    Route::get('/checkout/econt-offices', [CheckoutController::class, 'econtOffices']);
+    Route::post('/checkout', [CheckoutController::class, 'store']);
+    Route::post('/checkout/calculate-shipping', [CheckoutController::class, 'calculateShipping']);
+});
 
 Route::post('/contact', [ContactController::class, 'store']);
 

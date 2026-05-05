@@ -4,11 +4,7 @@ namespace App\Mail;
 
 use App\Models\Contact;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
-use Illuminate\Mail\Mailables\Attachment;
-use Illuminate\Mail\Mailables\Content;
-use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
 class AdminContactMessageMail extends Mailable
@@ -18,6 +14,7 @@ class AdminContactMessageMail extends Mailable
     /**
      * Create a new message instance.
      */
+    public $contact;
     public function __construct(Contact $contact)
     {
         $this->contact = $contact;

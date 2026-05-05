@@ -1,8 +1,7 @@
 <?php
 
 use App\Exceptions\CheckoutException;
-use App\Http\Middleware\CorsMiddleware;
-use App\Http\Middleware\DisableCartCsrf;
+use App\Http\Middleware\AuthenticateOptionalSanctumToken;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -16,10 +15,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->use([CorsMiddleware::class]);
-        $middleware->validateCsrfTokens(except: [
-            'cart/*',
-            'checkout/*',
+        $middleware->alias([
+            'optional.sanctum' => AuthenticateOptionalSanctumToken::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

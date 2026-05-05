@@ -93,8 +93,7 @@ class AuthController extends Controller
     public function login(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'email' => ['sometimes', 'required_without:username', 'email'],
-            'username' => ['sometimes', 'required_without:email', 'string'],
+            'email' => ['required', 'email'],
             'password' => ['required', 'string'],
         ]);
 
@@ -102,8 +101,6 @@ class AuthController extends Controller
 
         if (isset($validated['email'])) {
             $user = User::where('email', $validated['email'])->first();
-        } elseif (isset($validated['username']) && Schema::hasColumn('users', 'username')) {
-            $user = User::where('username', $validated['username'])->first();
         }
 
         if (! $user || ! Hash::check($validated['password'], $user->password)) {
