@@ -86,11 +86,13 @@ class EcontPayloadMapper
             ];
         }
 
-        // Declared value (optional) - use shipment declared value if set, otherwise fallback to order subtotal if available
-        if ($shipment->declared_value > 0) {
-            $payload['services']['declaredValueAmount'] = round($shipment->declared_value, 2);
-        } elseif (!empty($order->subtotal) && $order->subtotal > 0) {
-            $payload['services']['declaredValueAmount'] = round($order->subtotal, 2);
+        // Econt does not allow declared value for automatic postal stations.
+        if ($shipment->delivery_type !== 'apm') {
+            if ($shipment->declared_value > 0) {
+                $payload['services']['declaredValueAmount'] = round($shipment->declared_value, 2);
+            } elseif (!empty($order->subtotal) && $order->subtotal > 0) {
+                $payload['services']['declaredValueAmount'] = round($order->subtotal, 2);
+            }
         }
 
         // SMS notification (optional) - only include if customer email is available for notification
@@ -262,4 +264,3 @@ class EcontPayloadMapper
         return 'workday';
     }
 }
-

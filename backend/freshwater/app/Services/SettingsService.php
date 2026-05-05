@@ -9,6 +9,7 @@ use App\Services\Econt\EcontPayloadMapper;
 use App\Services\Econt\EcontService;
 use App\Support\EcontDeliveryTypeResolver;
 use Illuminate\Support\Facades\Log;
+use RuntimeException;
 
 class SettingsService
 {
@@ -101,7 +102,7 @@ class SettingsService
         try {
             $shipment = $this->buildShipmentForPricing($order);
             $payload = $this->econtPayloadMapper->map($shipment);
-            $response = $this->econtService->createLabel($payload, 'calculate');
+            $response = $this->calculateEcontLabel($payload);
             $price = $response['label']['totalPrice'] ?? null;
 
             return $price !== null ? (float) $price : 0.0;
@@ -122,6 +123,28 @@ class SettingsService
     public function calculateEcontShippingForOrder(Order $order): float
     {
         return $this->calculateEcontShipping($order);
+    }
+
+    private function calculateEcontLabel(array $payload): array
+    {
+        try {
+            return $this->econtService->createLabel($payload, 'calculate');
+        } catch (RuntimeException $e) {
+            if (
+                str_contains($e->getMessage(), 'автоматична пощенска станция')
+                && isset($payload['services']['declaredValueAmount'])
+            ) {
+                unset($payload['services']['declaredValueAmount']);
+
+                if (empty($payload['services'])) {
+                    unset($payload['services']);
+                }
+
+                return $this->econtService->createLabel($payload, 'calculate');
+            }
+
+            throw $e;
+        }
     }
     /**
      * Build a Shipment object based on the given order details, which is used for Econt shipping cost calculation. 
