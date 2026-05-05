@@ -7,79 +7,17 @@ use App\Services\CartService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Schema;
 use Laravel\Sanctum\PersonalAccessToken;
 
 class AuthController extends Controller
 {
-    private function cartSessionFallbackCacheKey(Request $request): string
-    {
-        return 'cart-session-fallback:' . sha1(($request->ip() ?? 'unknown') . '|' . (string) $request->userAgent());
-    }
-
-    private function cartSessionUserCacheKey(Request $request, string $sessionId): string
-    {
-        return 'cart-session-user:' . sha1(($request->ip() ?? 'unknown') . '|' . (string) $request->userAgent() . '|' . $sessionId);
-    }
-
-    private function cartSessionDebugContext(Request $request): array
-    {
-        $fields = [
-            'sessionId',
-            'session_id',
-            'cartSessionId',
-            'cart_session_id',
-        ];
-
-        $body = [];
-        $query = [];
-
-        foreach ($fields as $field) {
-            if ($request->exists($field)) {
-                $value = $request->input($field);
-                $body[$field] = [
-                    'type' => get_debug_type($value),
-                    'value' => is_scalar($value) ? (string) $value : null,
-                ];
-            }
-
-            if ($request->query->has($field)) {
-                $value = $request->query($field);
-                $query[$field] = [
-                    'type' => get_debug_type($value),
-                    'value' => is_scalar($value) ? (string) $value : null,
-                ];
-            }
-        }
-
-        return [
-            'cart_session_body' => $body,
-            'cart_session_query' => $query,
-            'cart_session_headers' => [
-                'X-Cart-Session-Id' => $request->header('X-Cart-Session-Id'),
-                'X-Cart-Session' => $request->header('X-Cart-Session'),
-            ],
-            'cart_session_fallback' => Cache::store('file')->get($this->cartSessionFallbackCacheKey($request)),
-        ];
-    }
-
     private function cartSessionId(Request $request): ?string
     {
-        $sessionId = $request->input('sessionId')
-            ?? $request->input('session_id')
-            ?? $request->input('cartSessionId')
-            ?? $request->input('cart_session_id')
-            ?? $request->query('sessionId')
+        $sessionId = $request->input('session_id')
             ?? $request->query('session_id')
-            ?? $request->query('cartSessionId')
-            ?? $request->query('cart_session_id')
-            ?? $request->header('X-Cart-Session-Id')
-            ?? $request->header('X-Cart-Session')
-            ?? Cache::store('file')->get($this->cartSessionFallbackCacheKey($request))
-            ?? null;
+            ?? $request->header('X-Cart-Session-Id');
 
         if (is_scalar($sessionId)) {
             $sessionId = trim((string) $sessionId);
@@ -112,25 +50,16 @@ class AuthController extends Controller
         Auth::setUser($user);
 
         if (! empty($sessionId)) {
-            Log::info('Login with cart session id', array_merge([
+            Log::info('Login with cart session id', [
                 'user_id' => $user->id,
                 'cart_session_id' => $sessionId,
-            ], $this->cartSessionDebugContext($request)));
+            ]);
 
             (new CartService($sessionId))->mergeGuestCartToUser();
-            Cache::store('file')->put(
-                $this->cartSessionUserCacheKey($request, $sessionId),
-                $user->id,
-                now()->addMinutes(30)
-            );
         } else {
-            Log::info('Login without cart session id', array_merge([
+            Log::info('Login without cart session id', [
                 'user_id' => $user->id,
-                'payload_keys' => array_keys($request->except(['password'])),
-                'query_keys' => array_keys($request->query()),
-                'has_cart_session_header' => $request->hasHeader('X-Cart-Session-Id')
-                    || $request->hasHeader('X-Cart-Session'),
-            ], $this->cartSessionDebugContext($request)));
+            ]);
         }
 
         return response()->json([
@@ -161,25 +90,16 @@ class AuthController extends Controller
         Auth::setUser($user);
 
         if(!empty($sessionId)){
-            Log::info('Register with cart session id', array_merge([
+            Log::info('Register with cart session id', [
                 'user_id' => $user->id,
                 'cart_session_id' => $sessionId,
-            ], $this->cartSessionDebugContext($request)));
+            ]);
 
             (new CartService($sessionId))->mergeGuestCartToUser();
-            Cache::store('file')->put(
-                $this->cartSessionUserCacheKey($request, $sessionId),
-                $user->id,
-                now()->addMinutes(30)
-            );
         } else {
-            Log::info('Register without cart session id', array_merge([
+            Log::info('Register without cart session id', [
                 'user_id' => $user->id,
-                'payload_keys' => array_keys($request->except(['password'])),
-                'query_keys' => array_keys($request->query()),
-                'has_cart_session_header' => $request->hasHeader('X-Cart-Session-Id')
-                    || $request->hasHeader('X-Cart-Session'),
-            ], $this->cartSessionDebugContext($request)));
+            ]);
         }
         
         return response()->json([
