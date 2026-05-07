@@ -15,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Session;
 
 class CheckoutController extends Controller
 {
@@ -35,7 +36,9 @@ class CheckoutController extends Controller
     private function frontendCartSessionId(Request $request): ?string
     {
         $sessionId = $request->input('session_id')
+            ?? $request->input('sessionId')
             ?? $request->query('session_id')
+            ?? $request->query('sessionId')
             ?? $request->header('X-Cart-Session-Id');
 
         if (! is_scalar($sessionId)) {
@@ -44,7 +47,13 @@ class CheckoutController extends Controller
 
         $sessionId = trim((string) $sessionId);
 
-        return $sessionId !== '' ? $sessionId : null;
+        if ($sessionId === '') {
+            return null;
+        }
+
+        Session::put('cart_session_id', $sessionId);
+
+        return $sessionId;
     }
 
     /**
@@ -261,13 +270,12 @@ class CheckoutController extends Controller
             'shipping_city'     => 'required|string',
             'shipping_postcode' => 'nullable|string',
             'econt_office_code' => 'required_if:shipping_method,office,apm|string',
-            'payment_method'    => 'required|string',
+            'payment_method'    => 'required|in:bank_transfer,cod',
             'session_id'       => 'sometimes|string',
             'notes'             => 'nullable|string',
             'items'             => 'required|array|min:1',
             'items.*.product_id' => 'required|integer|exists:products,id',
             'items.*.quantity'   => 'required|integer|min:1',
-            'items.*.price'      => 'required|numeric|min:0',
         ]);
         $validated['session_id'] = $this->frontendCartSessionId($request);
 
@@ -280,14 +288,23 @@ class CheckoutController extends Controller
             ]);
 
         } catch (CheckoutException $e) {
+            Log::error('Checkout failed', [
+                'error' => $e->getMessage(),
+            ]);
+            
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage(),
+                'message' => 'An unexpected error occurred during checkout. Please try again later.',
             ], $e->getCode() ?: 422);
+
         } catch (\Exception $e) {
+            Log::error('Checkout failed', [
+                'error' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage(),
+                'message' => 'An unexpected error occurred during checkout. Please try again later.',
             ], 500);
         }
     }

@@ -78,7 +78,7 @@ class OrderResource extends Resource
     {
         return [
             ItemsRelationManager::class,
-            ShipmentsRelationManager::class, // ← ДОБАВИ
+            ShipmentsRelationManager::class, 
         ];
     }
 

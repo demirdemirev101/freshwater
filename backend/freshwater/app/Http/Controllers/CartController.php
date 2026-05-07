@@ -9,13 +9,16 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Session;
 
 class CartController extends Controller
 {
     private function frontendCartSessionId(Request $request): ?string
     {
         $sessionId = $request->input('session_id')
+            ?? $request->input('sessionId')
             ?? $request->query('session_id')
+            ?? $request->query('sessionId')
             ?? $request->header('X-Cart-Session-Id');
 
         if (! is_scalar($sessionId)) {
@@ -24,7 +27,13 @@ class CartController extends Controller
 
         $sessionId = trim((string) $sessionId);
 
-        return $sessionId !== '' ? $sessionId : null;
+        if ($sessionId === '') {
+            return null;
+        }
+
+        Session::put('cart_session_id', $sessionId);
+
+        return $sessionId;
     }
 
     /**

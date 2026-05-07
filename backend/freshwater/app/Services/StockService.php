@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Exceptions\CheckoutException;
 use App\Models\Product;
-use RuntimeException;
 
 class StockService
 {
@@ -16,6 +15,11 @@ class StockService
 
     public function reserve(Product $product, int $quantity): void
     {
+        if ($product->stock===false)
+        {
+            return;
+        }
+        
         $affected = Product::where('id', $product->id)
                 ->where('quantity', '>=', $quantity)
                 ->decrement('quantity', $quantity);
@@ -33,6 +37,11 @@ class StockService
      */
     public function release(Product $product, int $quantity): void
     {
+        if ($product->stock===false)
+        {
+            return;
+        }
+
         Product::where('id', $product->id)
             ->increment('quantity', $quantity);
     }

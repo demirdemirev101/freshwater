@@ -9,21 +9,13 @@ use App\Models\Product;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
-/**
- * The OrderService class is responsible for managing the lifecycle of orders in the application. 
- *  It provides methods to create new orders, recalculate order totals, and cancel existing orders.
- *  The service integrates with other services such as SettingsService for calculating shipping costs and totals,
- *  PaymentService for handling payment processing, and CartService for managing the shopping cart.
- *  The create method encapsulates the entire order creation process within a database transaction to ensure data integrity, including creating the order,
- *  adding items from the cart, calculating totals, and handling payment. Additionally,
- *  it dispatches an event when an order is placed and schedules a job for calculating shipping costs for certain payment methods.
- */
 class OrderService
 {
     public function __construct(
             protected SettingsService $settingsService,
             private PaymentService $paymentService,
-            private CartService $cartService
+            private CartService $cartService,
+            private StockService $stockService
         ) 
         {}
 
@@ -40,82 +32,6 @@ class OrderService
         $this->settingsService->applyTotals($order);
         $order->saveQuietly();
         $order->refresh();
-    }
-    /**
-     * Create a new order based on the provided data. This method performs the following steps:
-     *  1. It starts a database transaction to ensure atomicity of the entire order creation process.
-     *  2. It creates a new order record in the database with the provided customer and shipping information, as well as the selected payment method.
-     *  3. It retrieves the items from the user's cart and creates corresponding order items associated with the newly created order.
-     *  4. It recalculates the order totals, including the subtotal and shipping price, using the SettingsService.
-     *  5. It handles the payment processing for the order using the PaymentService.
-     *  6. It dispatches an OrderPlaced event to signal that a new order has been created, allowing other parts of the application to react accordingly.
-     *  7. If the payment method is either 'bank_transfer' or 'cod', it schedules a job to calculate the shipping costs asynchronously.
-     *  8. Finally, it returns the created order instance.
-     */
-
-    public function create(array $data = []): Order
-    {
-        return DB::transaction(function () use ($data) {
-            $shippingMethod = $data['shipping_method'] ?? 'address';
-
-            $order = Order::create([
-                // If the user is authenticated, associate the order with the user's ID. Otherwise, the order will be created without a user association.
-                'user_id'           => Auth::id(),
-                'customer_name'     => $data['customer_name'],
-                'customer_email'    => $data['customer_email'],
-                'customer_phone'    => $data['customer_phone'] ?? null,
-
-                'shipping_address'  => $data['shipping_address'] ?? '',
-                'shipping_city'     => $data['shipping_city'],
-                'shipping_postcode' => $data['shipping_postcode'] ?? null,
-                'shipping_method'   => $shippingMethod,
-                'econt_office_code' => $shippingMethod === 'address'
-                    ? null
-                    : ($data['econt_office_code'] ?? null),
-                'holiday_delivery_day' => $data['holiday_delivery_day'] ?? null,
-
-                'status'            => 'pending',
-
-                'subtotal'          => 0,
-                'shipping_price'    => 0,
-                'total'             => 0,
-
-                'payment_method'    => $data['payment_method'],
-                'payment_status'    => 'pending',
-
-                'notes'             => $data['notes'] ?? null,
-            ]);
-
-            $cartItems = $this->cartService->items();
-
-            if ($cartItems->isEmpty()) {
-                throw new \Exception('Количката е празна');
-            }
-
-            foreach ($cartItems as $cartItem) {
-                $order->items()->create([
-                    'product_id'   => $cartItem->product_id,
-                    'product_name' => $cartItem->product->name,
-                    'price'        => $cartItem->price,
-                    'quantity'     => $cartItem->quantity,
-                    'total'        => $cartItem->total,
-                ]);
-            }
-
-            $this->recalculateTotal($order);
-
-            // ⚠️ PaymentService вътре в транзакцията (OK за сега)
-            $this->paymentService->handle($order);
-
-            // ✅ ЕДИН event, ясно и чисто
-            OrderPlaced::dispatch($order->id, $data['session_id'] ?? $data['sessionId'] ?? null);
-
-            if (in_array($order->payment_method, ['bank_transfer', 'cod'], true)) {
-                dispatch(new CalculateBankTransferShippingJob($order->id));
-            }
-
-            return $order;
-        });
     }
 
     public function createFromItems(array $data = []): Order
@@ -153,15 +69,18 @@ class OrderService
 
             $subtotal = 0;
             foreach ($data['items'] as $itemData) {
-                $product = Product::find($itemData['product_id']);
-                $productName = $product ? $product->name : 'Unknown Product';
-                $total = $itemData['price'] * $itemData['quantity'];
+                $product = Product::findOrFail($itemData['product_id']);
+                $this->stockService->reserve($product, (int)$itemData['quantity']);
+                $productName = $product->name;
+                $price = $product->sale_price ?? $product->price;
+                $total = $price * $itemData['quantity'];
+                
                 $subtotal += $total;
 
                 $order->items()->create([
                     'product_id'   => $itemData['product_id'],
                     'product_name' => $productName,
-                    'price'        => $itemData['price'],
+                    'price'        => $price,
                     'quantity'     => $itemData['quantity'],
                     'total'        => $total,
                 ]);

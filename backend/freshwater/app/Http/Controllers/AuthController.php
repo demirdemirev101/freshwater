@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Session;
 use Laravel\Sanctum\PersonalAccessToken;
 
 class AuthController extends Controller
@@ -16,16 +17,26 @@ class AuthController extends Controller
     private function cartSessionId(Request $request): ?string
     {
         $sessionId = $request->input('session_id')
+            ?? $request->input('sessionId')
             ?? $request->query('session_id')
+            ?? $request->query('sessionId')
             ?? $request->header('X-Cart-Session-Id');
 
         if (is_scalar($sessionId)) {
             $sessionId = trim((string) $sessionId);
 
-            return $sessionId !== '' ? $sessionId : null;
+            if ($sessionId !== '') {
+                Session::put('cart_session_id', $sessionId);
+
+                return $sessionId;
+            }
         }
 
-        return null;
+        $rememberedSessionId = Session::get('cart_session_id');
+
+        return is_string($rememberedSessionId) && trim($rememberedSessionId) !== ''
+            ? trim($rememberedSessionId)
+            : null;
     }
 
     public function login(Request $request): JsonResponse
@@ -73,7 +84,7 @@ class AuthController extends Controller
     {
         $validated = $request->validate([
             'name'  => 'string|required|max:50',
-            'email' => 'email|required|max:255',
+            'email' => 'email|required|max:255|unique:users,email',
             'phone' => 'string|required|max:10',
             'password' => 'string|required|min:8',
         ]);
