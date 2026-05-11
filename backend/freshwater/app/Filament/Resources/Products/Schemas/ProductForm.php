@@ -36,18 +36,21 @@ class ProductForm
                 RichEditor::make('description')
                     ->label('Описание')
                     ->columnSpanFull(),
-                Section::make('Цени и наличност')
+                Section::make('Цени, тегло и наличност')
                     ->schema([
-                        Grid::make(2)->schema([
+                        Grid::make(3)->schema([
                             TextInput::make('price')
                                 ->label('Цена')
                                 ->numeric()
                                 ->prefix('€ '),
-
                             TextInput::make('sale_price')
                                 ->label('Цена с отстъпка')
                                 ->numeric()
                                 ->prefix('€ '),
+                            TextInput::make('weight')
+                                ->label('Тегло (кг)')
+                                ->numeric()
+                                ->suffix('кг'),
                         ]),
 
                         Toggle::make('stock')

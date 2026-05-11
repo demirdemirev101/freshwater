@@ -88,6 +88,8 @@ class ImagesRelationManager extends RelationManager
                     ->sortable(),
                 ImageColumn::make('image_path')
                     ->label('Изображение')
+                    ->imageHeight(40)
+                    ->circular()
                     ->disk('public'),
             ])
             ->filters([

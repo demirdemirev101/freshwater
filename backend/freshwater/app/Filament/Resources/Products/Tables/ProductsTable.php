@@ -36,6 +36,11 @@ class ProductsTable
                     ->label('Наличност')
                     ->searchable()
                     ->sortable(),
+                TextColumn::make('weight')
+                    ->label('Тегло (кг)')
+                    ->placeholder('-')
+                    ->suffix('кг')
+                    ->sortable(),
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
