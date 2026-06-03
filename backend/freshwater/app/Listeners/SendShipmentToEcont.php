@@ -25,7 +25,7 @@ class SendShipmentToEcont implements ShouldQueue
 
     public function handle(ShipmentCreated $event): void
     {
-        app(ShipmentDispatchService::class)->dispatchForOrder($event->orderId, $this->attempts(), $this->tries);
+        app(ShipmentDispatchService::class)->dispatchShipment($event->shipmentId, $this->attempts(), $this->tries);
     }
 
     /**
@@ -36,6 +36,6 @@ class SendShipmentToEcont implements ShouldQueue
      */
     public function failed(ShipmentCreated $event, Throwable $exception): void
     {
-        app(ShipmentDispatchService::class)->markDispatchFailed($event->orderId, $exception);
+        app(ShipmentDispatchService::class)->markDispatchFailed($event->shipmentId, $exception);
     }
 }

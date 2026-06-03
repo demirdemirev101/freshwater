@@ -11,7 +11,7 @@ class ShipmentCreationService
         private ShipmentMeasurementService $shipmentMeasurementService
     ) {}
 
-    public function createForOrder(int $orderId): void
+    public function createForOrder(int $orderId)
     {
         $order = Order::with(['shipment', 'items.product'])->findOrFail($orderId);
 
@@ -21,13 +21,14 @@ class ShipmentCreationService
                 'shipment_id' => $order->shipment->id,
             ]);
 
-            return;
+            return $order->shipment;
         }
 
         $deliveryType = $this->determineDeliveryType($order);
         $declaredValue = $this->calculateDeclaredValue($order);
         $shipment = $this->shipmentMeasurementService->applyToShipment($order->shipment()->make([
             'carrier' => 'econt',
+            'direction' => 'outbound',
             'pack_count' => $this->calculatePackCount($order),
             'declared_value' => $declaredValue,
             'shipping_price_estimated' => $order->shipping_price,
@@ -48,6 +49,8 @@ class ShipmentCreationService
             'shipment_type' => $shipment->shipment_type,
             'delivery_type' => $deliveryType,
         ]);
+
+        return $shipment;
     }
 
     private function determineDeliveryType(Order $order): string

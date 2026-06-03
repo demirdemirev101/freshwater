@@ -2,40 +2,25 @@
 
 namespace Tests\Feature;
 
+use App\Enums\OrderStatus;
+use App\Events\ShipmentCreated;
+use App\Mail\OrderReturnRequestedMail;
 use App\Models\Order;
 use App\Models\Shipment;
 use App\Services\Shipment\ShipmentReturnService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\Client\Request;
-use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class ShipmentReturnServiceTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_it_creates_a_reverse_label_for_address_delivery(): void
+    public function test_it_creates_a_separate_return_shipment_and_dispatches_it_through_the_normal_flow(): void
     {
-        config([
-            'services.econt.enabled' => true,
-            'services.econt.base_url' => 'https://demo.econt.com/ee/services',
-            'services.econt.username' => 'demo-user',
-            'services.econt.password' => 'demo-pass',
-            'services.econt.verify_ssl' => true,
-            'services.econt.sender.name' => 'Freshwater',
-            'services.econt.sender.phone' => '+359888888888',
-            'services.econt.sender.office_code' => 'FS001',
-        ]);
-
-        Http::fake([
-            'https://demo.econt.com/ee/services/Shipments/LabelService.createLabel.json' => Http::response([
-                'label' => [
-                    'shipmentNumber' => 'RET-123456',
-                    'pdfURL' => 'https://example.test/return-label.pdf',
-                    'totalPrice' => 8.40,
-                ],
-            ], 200),
-        ]);
+        Event::fake([ShipmentCreated::class]);
+        Mail::fake();
 
         $order = Order::create([
             'customer_name' => 'Ivan Petrov',
@@ -45,7 +30,7 @@ class ShipmentReturnServiceTest extends TestCase
             'shipping_city' => 'Sofia',
             'shipping_postcode' => '1784',
             'shipping_method' => 'address',
-            'status' => 'completed',
+            'status' => OrderStatus::COMPLETED->value,
             'subtotal' => 120,
             'shipping_price' => 0,
             'total' => 120,
@@ -53,9 +38,10 @@ class ShipmentReturnServiceTest extends TestCase
             'payment_status' => 'paid',
         ]);
 
-        $shipment = Shipment::create([
+        $outboundShipment = Shipment::create([
             'order_id' => $order->id,
             'carrier' => 'econt',
+            'direction' => 'outbound',
             'carrier_shipment_id' => 'OUT-654321',
             'tracking_number' => 'OUT-654321',
             'weight' => 2.5,
@@ -66,20 +52,27 @@ class ShipmentReturnServiceTest extends TestCase
 
         $created = app(ShipmentReturnService::class)->createReturnLabel($order);
 
-        $this->assertSame('RET-123456', $created->return_carrier_shipment_id);
-        $this->assertSame('RET-123456', $created->return_tracking_number);
-        $this->assertSame('https://example.test/return-label.pdf', $created->return_label_url);
-        $this->assertSame('confirmed', $created->return_status);
-        $this->assertNotNull($created->return_sent_to_carrier_at);
+        $this->assertNotSame($outboundShipment->id, $created->id);
+        $this->assertSame('return', $created->direction);
+        $this->assertSame('created', $created->status);
+        $this->assertSame('address', $created->delivery_type);
+        $this->assertSame('0.00', (string) $created->cash_on_delivery);
+        $this->assertSame($outboundShipment->pack_count, $created->pack_count);
 
-        Http::assertSent(function (Request $request) use ($shipment) {
-            $payload = $request->data();
+        $order->refresh();
+        $this->assertSame(OrderStatus::RETURN_REQUESTED->value, $order->status);
+        $this->assertDatabaseHas('shipments', [
+            'id' => $created->id,
+            'order_id' => $order->id,
+            'direction' => 'return',
+        ]);
 
-            return $request->url() === 'https://demo.econt.com/ee/services/Shipments/LabelService.createLabel.json'
-                && data_get($payload, 'label.previousShipmentNumber') === $shipment->carrier_shipment_id
-                && data_get($payload, 'label.senderAddress.city.name') === 'Sofia'
-                && data_get($payload, 'label.receiverOfficeCode') === 'FS001'
-                && data_get($payload, 'label.paymentReceiverMethod') === 'cash';
-        });
+        Event::assertDispatched(
+            ShipmentCreated::class,
+            fn (ShipmentCreated $event): bool => $event->orderId === $order->id
+                && $event->shipmentId === $created->id,
+        );
+
+        Mail::assertSent(OrderReturnRequestedMail::class);
     }
 }

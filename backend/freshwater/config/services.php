@@ -43,6 +43,8 @@ return [
         'base_url' => env('ECONT_BASE_URL', 'https://demo.econt.com/ee/services'),
         // За реална среда: 'https://ee.econt.com/services'
         'track_url' => env('ECONT_TRACK_URL', null),
+        'max_pack_weight_kg' => (float) env('ECONT_MAX_PACK_WEIGHT_KG', 30),
+        'cargo_dimension_from_cm' => (float) env('ECONT_CARGO_DIMENSION_FROM_CM', 60),
 
         'username' => env('ECONT_USERNAME'),
         'password' => env('ECONT_PASSWORD'),

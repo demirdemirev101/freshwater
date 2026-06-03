@@ -4,7 +4,6 @@ namespace App\Services\Shipment;
 
 use App\Jobs\NotifyAdminShipmentFailedJob;
 use App\Jobs\SendTrackingEmailJob;
-use App\Models\Order;
 use App\Models\Shipment;
 use App\Services\Econt\EcontPayloadMapper;
 use App\Services\Econt\EcontService;
@@ -20,15 +19,16 @@ class ShipmentDispatchService
         private EcontPayloadMapper $payloadMapper
     ) {}
 
-    public function dispatchForOrder(int $orderId, int $attempts, int $maxAttempts): void
+    public function dispatchShipment(int $shipmentId, int $attempts, int $maxAttempts): void
     {
-        $order = Order::with('shipment')->findOrFail($orderId);
-        $shipment = $order->shipment;
+        $shipment = Shipment::with('order')->findOrFail($shipmentId);
+        $order = $shipment->order;
 
-        if (! $shipment || $shipment->status !== 'created') {
+        if (! $order || $shipment->status !== 'created') {
             Log::warning('Shipment not ready for Econt', [
-                'order_id' => $order->id,
-                'status' => $shipment?->status,
+                'shipment_id' => $shipment->id,
+                'order_id' => $order?->id,
+                'status' => $shipment->status,
             ]);
 
             return;
@@ -87,26 +87,26 @@ class ShipmentDispatchService
         }
     }
 
-    public function markDispatchFailed(int $orderId, Throwable $exception): void
+    public function markDispatchFailed(int $shipmentId, Throwable $exception): void
     {
-        $order = Order::with('shipment')->find($orderId);
+        $shipment = Shipment::with('order')->find($shipmentId);
 
-        if (! $order || ! $order->shipment) {
+        if (! $shipment) {
             return;
         }
 
-        $order->shipment->update([
+        $shipment->update([
             'status' => 'error',
             'error_message' => ErrorMessages::SHIPMENT_CREATE_FAILED_AFTER_RETRIES.' '.$exception->getMessage(),
         ]);
 
         Log::critical('Econt shipment job failed permanently', [
-            'order_id' => $order->id,
-            'shipment_id' => $order->shipment->id,
+            'order_id' => $shipment->order_id,
+            'shipment_id' => $shipment->id,
             'error' => $exception->getMessage(),
         ]);
 
-        dispatch(new NotifyAdminShipmentFailedJob($order->shipment->id));
+        dispatch(new NotifyAdminShipmentFailedJob($shipment->id));
     }
 
     private function markLocalShipmentAsConfirmed(Shipment $shipment): void

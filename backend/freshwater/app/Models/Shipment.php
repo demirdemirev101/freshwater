@@ -13,6 +13,7 @@ class Shipment extends Model
     protected $fillable = [
         'order_id',
         'carrier',
+        'direction',
 
         'carrier_shipment_id',
         'return_carrier_shipment_id',

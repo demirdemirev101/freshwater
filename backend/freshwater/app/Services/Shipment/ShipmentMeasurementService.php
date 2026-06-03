@@ -9,10 +9,6 @@ use Illuminate\Support\Facades\Schema;
 
 class ShipmentMeasurementService
 {
-    private const MAX_PACKAGE_WEIGHT_KG = 30.0;
-
-    private const MAX_PACKAGE_DIMENSION_CM = 60.0;
-
     private ?array $shipmentColumns = null;
 
     public function __construct(
@@ -109,12 +105,12 @@ class ShipmentMeasurementService
 
     private function resolveShipmentType(float $weight, array $dimensions): string
     {
-        if ($weight > self::MAX_PACKAGE_WEIGHT_KG) {
+        if ($weight > $this->maxPackageWeightKg()) {
             return 'cargo';
         }
 
         foreach (['height', 'width', 'length'] as $key) {
-            if (($dimensions[$key] ?? null) !== null && $dimensions[$key] > self::MAX_PACKAGE_DIMENSION_CM) {
+            if (($dimensions[$key] ?? null) !== null && $dimensions[$key] > $this->cargoDimensionFromCm()) {
                 return 'cargo';
             }
         }
@@ -131,5 +127,15 @@ class ShipmentMeasurementService
         $value = round((float) $value, 2);
 
         return $value > 0 ? $value : null;
+    }
+
+    private function maxPackageWeightKg(): float
+    {
+        return max(0.1, (float) config('services.econt.max_pack_weight_kg', 30));
+    }
+
+    private function cargoDimensionFromCm(): float
+    {
+        return max(0.1, (float) config('services.econt.cargo_dimension_from_cm', 60));
     }
 }

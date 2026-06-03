@@ -10,5 +10,8 @@ class ShipmentCreated implements ShouldDispatchAfterCommit
 {
     use Dispatchable, SerializesModels;
 
-    public function __construct(public int $orderId) {}
+    public function __construct(
+        public int $orderId,
+        public int $shipmentId
+    ) {}
 }

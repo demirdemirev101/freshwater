@@ -7,7 +7,6 @@ use App\Enums\PaymentStatus;
 use App\Events\OrderReadyForShipment;
 use App\Filament\Resources\Orders\OrderResource;
 use App\Mail\OrderCancelledMail;
-use App\Mail\OrderReturnRequestedMail;
 use App\Policies\CancelOrderPolicy;
 use App\Policies\ConfirmBankTransferPolicy;
 use App\Policies\IsOrderLockedPolicy;
@@ -31,7 +30,6 @@ class EditOrder extends EditRecord
     public function handleOrderRefresh(): void
     {
         $this->getRecord()->refresh();
-
         $this->fillForm();
     }
 
@@ -44,7 +42,7 @@ class EditOrder extends EditRecord
 
     public function shouldPollShipmentStatus(): bool
     {
-        $record = $this->getRecord()->fresh(['shipment']);
+        $record = $this->getRecord()->fresh(['shipment', 'returnShipment']);
 
         if (! $record) {
             return false;
@@ -206,18 +204,10 @@ class EditOrder extends EditRecord
                         return;
                     }
 
-                    $this->record->updateQuietly([
-                        'status' => OrderStatus::RETURN_REQUESTED->value,
-                    ]);
-
-                    if ($this->record->customer_email) {
-                        Mail::to($this->record->customer_email)->send(new OrderReturnRequestedMail($this->record->id));
-                    }
-
                     Notification::make()
                         ->success()
                         ->title('Заявено е връщане')
-                        ->body('Обратната товарителница е създадена и клиентът е уведомен.')
+                        ->body('Създадена е обратна пратка и е пусната към Еконт по стандартния shipment flow.')
                         ->send();
 
                     $this->refreshUi();

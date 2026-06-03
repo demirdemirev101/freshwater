@@ -47,9 +47,9 @@ class CancelOrderPolicy
             return false;
         }
 
-        $order->loadMissing('shipment');
+        $order->loadMissing(['shipment', 'returnShipment']);
 
         return ! empty($order->shipment?->carrier_shipment_id)
-            && empty($order->shipment?->return_carrier_shipment_id);
+            && ! $order->returnShipment;
     }
 }

@@ -11,8 +11,8 @@ class CreateEcontShipment implements ShouldQueue
 {
     public function handle(OrderReadyForShipment $event): void
     {
-        app(ShipmentCreationService::class)->createForOrder($event->orderId);
+        $shipment = app(ShipmentCreationService::class)->createForOrder($event->orderId);
 
-        event(new ShipmentCreated($event->orderId));
+        event(new ShipmentCreated($event->orderId, $shipment->id));
     }
 }
