@@ -3,10 +3,8 @@
 namespace App\Filament\Widgets;
 
 use App\Enums\OrderStatus;
-use App\Models\Category;
 use App\Models\Contact;
 use App\Models\Order;
-use App\Models\Product;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -39,6 +37,10 @@ class StoreOverviewStats extends BaseWidget
             ])
             ->count();
 
+        $revenueLastYear = (float) Order::query()
+            ->whereBetween('created_at', [now()->subMonths(11)->startOfMonth(), now()->endOfMonth()])
+            ->sum('total');
+
         return [
             Stat::make('Поръчки този месец', (string) $ordersThisMonth)
                 ->description('Всички нови поръчки за текущия месец')
@@ -60,9 +62,9 @@ class StoreOverviewStats extends BaseWidget
                 ->descriptionIcon('heroicon-m-arrow-uturn-left')
                 ->color('danger'),
 
-            Stat::make('Категории / Продукти', Category::count().' / '.Product::count())
-                ->description('Съдържание в каталога')
-                ->descriptionIcon('heroicon-m-squares-2x2')
+            Stat::make('Приход за 12 месеца', number_format($revenueLastYear, 2).' EUR')
+                ->description('Общ приход за последната година')
+                ->descriptionIcon('heroicon-m-chart-bar')
                 ->color('primary'),
 
             Stat::make('Съобщения', (string) Contact::count())

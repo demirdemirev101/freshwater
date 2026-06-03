@@ -8,6 +8,7 @@ use App\Filament\Resources\Orders\RelationManagers\ItemsRelationManager;
 use App\Filament\Resources\Orders\RelationManagers\ShipmentsRelationManager;
 use App\Filament\Resources\Orders\Schemas\OrderForm;
 use App\Filament\Resources\Orders\Tables\OrdersTable;
+use App\Enums\OrderStatus;
 use App\Models\Order;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -86,5 +87,39 @@ class OrderResource extends Resource
             'index' => ListOrders::route('/'),
             'edit' => EditOrder::route('/{record}/edit'),
         ];
+    }
+
+    public static function getNavigationBadge(): ?string
+    {
+        $count = static::getUnprocessedOrdersCount();
+
+        return $count > 0 ? (string) $count : null;
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return static::getUnprocessedOrdersCount() > 0 ? 'warning' : null;
+    }
+
+    public static function getNavigationBadgeTooltip(): ?string
+    {
+        $count = static::getUnprocessedOrdersCount();
+
+        if ($count === 0) {
+            return null;
+        }
+
+        return 'Необработени поръчки, които чакат действие';
+    }
+
+    private static function getUnprocessedOrdersCount(): int
+    {
+        return Order::query()
+            ->whereIn('status', [
+                OrderStatus::PENDING_REVIEW->value,
+                OrderStatus::PROCESSING->value,
+                OrderStatus::READY_FOR_SHIPMENT->value,
+            ])
+            ->count();
     }
 }
