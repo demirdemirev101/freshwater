@@ -24,6 +24,9 @@ class Product extends Model
         'extra_information',
         'quantity',
         'weight',
+        'height',
+        'width',
+        'length',
     ];
 
     /**
@@ -34,6 +37,9 @@ class Product extends Model
         'stock' => 'boolean',
         'sale_price' => 'decimal:2',
         'weight' => 'decimal:2',
+        'height' => 'decimal:2',
+        'width' => 'decimal:2',
+        'length' => 'decimal:2',
     ];
 
     /**

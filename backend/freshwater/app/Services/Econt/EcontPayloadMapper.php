@@ -26,12 +26,12 @@ class EcontPayloadMapper
     {
         $order = $shipment->order;
 
-        if (!$order) {
-            throw new RuntimeException('Shipment has no related order.');
+        if (! $order) {
+            throw new RuntimeException('Пратката няма свързана поръчка.');
         }
 
         if (empty($order->customer_phone)) {
-            throw new RuntimeException('Missing customer phone for Econt shipment.');
+            throw new RuntimeException('Липсва телефон на клиента за пратката към Еконт.');
         }
 
         $phone = $this->formatPhone($order->customer_phone);
@@ -47,10 +47,10 @@ class EcontPayloadMapper
                 'phones' => [$phone],
             ],
 
-            'shipmentType' => 'PACK',
+            'shipmentType' => $this->resolveShipmentType($shipment),
             'weight' => round($shipment->weight, 3),
             'packCount' => $shipment->pack_count ?? 1,
-            'shipmentDescription' => 'Package',
+            'shipmentDescription' => 'Пратка',
 
             'payAfterAccept' => false,
             'payAfterTest' => false,
@@ -167,7 +167,7 @@ class EcontPayloadMapper
                 'street' => $street,
             ]);
 
-            throw new RuntimeException('Incomplete receiver address for Econt shipment.');
+            throw new RuntimeException('Адресът на получателя за пратката към Еконт е непълен.');
         }
 
         // Building the address payload according to Econt API requirements
@@ -262,5 +262,12 @@ class EcontPayloadMapper
     private function resolveHolidayDeliveryDay(): string
     {
         return 'workday';
+    }
+
+    private function resolveShipmentType(Shipment $shipment): string
+    {
+        return $shipment->shipment_type === 'cargo'
+            ? 'CARGO'
+            : 'PACK';
     }
 }

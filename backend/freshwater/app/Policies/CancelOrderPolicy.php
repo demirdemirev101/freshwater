@@ -43,7 +43,13 @@ class CancelOrderPolicy
 
     public function canRequestReturn(Order $order): bool
     {
-        return in_array($order->status, self::RETURN_REQUESTABLE_STATUSES, true);
+        if (! in_array($order->status, self::RETURN_REQUESTABLE_STATUSES, true)) {
+            return false;
+        }
+
+        $order->loadMissing('shipment');
+
+        return ! empty($order->shipment?->carrier_shipment_id)
+            && empty($order->shipment?->return_carrier_shipment_id);
     }
 }
-

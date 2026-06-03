@@ -36,9 +36,9 @@ class ProductForm
                 RichEditor::make('description')
                     ->label('Описание')
                     ->columnSpanFull(),
-                Section::make('Цени, тегло и наличност')
+                Section::make('Цени, размери и наличност')
                     ->schema([
-                        Grid::make(3)->schema([
+                        Grid::make(4)->schema([
                             TextInput::make('price')
                                 ->label('Цена')
                                 ->numeric()
@@ -51,6 +51,18 @@ class ProductForm
                                 ->label('Тегло (кг)')
                                 ->numeric()
                                 ->suffix('кг'),
+                            TextInput::make('height')
+                                ->label('Височина (см)')
+                                ->numeric()
+                                ->suffix('см'),
+                            TextInput::make('width')
+                                ->label('Ширина (см)')
+                                ->numeric()
+                                ->suffix('см'),
+                            TextInput::make('length')
+                                ->label('Дължина (см)')
+                                ->numeric()
+                                ->suffix('см'),
                         ]),
 
                         Toggle::make('stock')

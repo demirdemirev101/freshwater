@@ -4,20 +4,22 @@ namespace App\Services\Shipment;
 
 use App\Enums\OrderStatus;
 use App\Models\Order;
+use App\Policies\ShipmentPollingPolicy;
 use App\Services\Econt\EcontService;
 use Illuminate\Support\Facades\Log;
-use App\Policies\ShipmentPollingPolicy;
 
 class ShipmentTrackingSyncService
 {
     private EcontService $econtService;
+
     private ShipmentPollingPolicy $shipmentPollingPolicy;
-    
-    public function __construct(EcontService $econtService, ShipmentPollingPolicy $shipmentPollingPolicy) {
+
+    public function __construct(EcontService $econtService, ShipmentPollingPolicy $shipmentPollingPolicy)
+    {
         $this->econtService = $econtService;
         $this->shipmentPollingPolicy = $shipmentPollingPolicy;
     }
-    
+
     /**
      * Polls the shipment status from Econt and updates the local shipment and order records accordingly. This method checks if shipment polling should
      *  continue, retrieves the latest shipment status from Econt, and updates the shipment status and order status based on the tracking information.
@@ -27,11 +29,11 @@ class ShipmentTrackingSyncService
     public function syncShipmentTracking(Order $order): bool
     {
         $order = $order->fresh(['shipment']);
-        
+
         if (! $order) {
             return false;
         }
-        
+
         if (! $this->shipmentPollingPolicy->shouldPollShipmentStatus($order)) {
             return false;
         }
@@ -39,10 +41,17 @@ class ShipmentTrackingSyncService
         $shipment = $order->shipment;
 
         if (! $shipment) {
-            return  false;
+            return false;
         }
 
-        if (empty($shipment->carrier_shipment_id)) {
+        $isReturnFlow = $order->status === OrderStatus::RETURN_REQUESTED->value
+            && ! empty($shipment->return_carrier_shipment_id);
+
+        $trackedShipmentNumber = $isReturnFlow
+            ? $shipment->return_carrier_shipment_id
+            : $shipment->carrier_shipment_id;
+
+        if (empty($trackedShipmentNumber)) {
             return false;
         }
 
@@ -51,11 +60,11 @@ class ShipmentTrackingSyncService
         }
 
         try {
-            $response = $this->econtService->trackShipment($shipment->carrier_shipment_id);
+            $response = $this->econtService->trackShipment($trackedShipmentNumber);
             $result = $response['shipmentStatuses'][0] ?? null;
 
             if (! is_array($result)) {
-                return  false; 
+                return false;
             }
 
             if (! empty($result['error'])) {
@@ -64,6 +73,7 @@ class ShipmentTrackingSyncService
                     'shipment_id' => $shipment->id,
                     'error' => $result['error'],
                 ]);
+
                 return false;
             }
 
@@ -73,13 +83,15 @@ class ShipmentTrackingSyncService
                 return false;
             }
 
-            $carrierResponse = $shipment->carrier_response;
+            $carrierResponse = $isReturnFlow
+                ? $shipment->return_carrier_response
+                : $shipment->carrier_response;
             $carrierResponse = is_array($carrierResponse) ? $carrierResponse : [];
             $carrierResponse['tracking'] = $response;
 
-            $updates = [
-                'carrier_response' => $carrierResponse,
-            ];
+            $updates = $isReturnFlow
+                ? ['return_carrier_response' => $carrierResponse]
+                : ['carrier_response' => $carrierResponse];
 
             $shortStatus = $status['shortDeliveryStatus'] ?? $status['shortDeliveryStatusEn'] ?? null;
             $shortStatusEn = $status['shortDeliveryStatusEn'] ?? null;
@@ -120,16 +132,19 @@ class ShipmentTrackingSyncService
                 ], true)
             );
 
+            $statusField = $isReturnFlow ? 'return_status' : 'status';
+            $currentStatus = $isReturnFlow ? $shipment->return_status : $shipment->status;
+
             if ($returnedToSender) {
-                $updates['status'] = 'returned';
+                $updates[$statusField] = 'returned';
             } elseif ($returningToSender) {
-                $updates['status'] = 'returning';
+                $updates[$statusField] = 'returning';
             } elseif ($cancelledByCarrier) {
-                $updates['status'] = 'cancelled';
+                $updates[$statusField] = 'cancelled';
             } elseif ($delivered) {
-                $updates['status'] = 'delivered';
-            } elseif ($inTransit && $shipment->status !== 'delivered') {
-                $updates['status'] = 'in_transit';
+                $updates[$statusField] = 'delivered';
+            } elseif ($inTransit && $currentStatus !== 'delivered') {
+                $updates[$statusField] = 'in_transit';
             }
 
             $shipment->fill($updates);
@@ -141,7 +156,10 @@ class ShipmentTrackingSyncService
 
             $orderChanged = false;
 
-            if ($returnedToSender && $order->status !== OrderStatus::RETURNED->value) {
+            if ($isReturnFlow && $delivered && $order->status !== OrderStatus::RETURNED->value) {
+                $order->update(['status' => OrderStatus::RETURNED->value]);
+                $orderChanged = true;
+            } elseif ($returnedToSender && $order->status !== OrderStatus::RETURNED->value) {
                 $order->update(['status' => OrderStatus::RETURNED->value]);
                 $orderChanged = true;
             } elseif ($returningToSender && $order->status !== OrderStatus::RETURN_REQUESTED->value) {
@@ -163,13 +181,14 @@ class ShipmentTrackingSyncService
             }
 
             return $shipmentChanged || $orderChanged;
-            
+
         } catch (\Throwable $e) {
             Log::error('Econt tracking failed', [
                 'order_id' => $order->id,
                 'shipment_id' => $shipment->id,
                 'error' => $e->getMessage(),
             ]);
+
             return false;
         }
     }

@@ -7,6 +7,7 @@ use App\Models\Setting;
 use App\Models\Shipment;
 use App\Services\Econt\EcontPayloadMapper;
 use App\Services\Econt\EcontService;
+use App\Services\Shipment\ShipmentMeasurementService;
 use App\Support\EcontDeliveryTypeResolver;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
@@ -16,7 +17,7 @@ class SettingsService
     public function __construct(
         private EcontService $econtService,
         private EcontPayloadMapper $econtPayloadMapper,
-        private WeightCalculatorService $weightCalculator
+        private ShipmentMeasurementService $shipmentMeasurementService
     ) {}
 
     /**
@@ -159,7 +160,7 @@ class SettingsService
 
         $shipment = new Shipment();
         $shipment->setRelation('order', $order);
-        $shipment->weight = $this->weightCalculator->forOrder($order);
+        $shipment = $this->shipmentMeasurementService->applyToShipment($shipment, $order);
         $shipment->pack_count = $this->calculatePackCount($order);
         $shipment->declared_value = (float) ($order->subtotal ?? 0);
         $shipment->cash_on_delivery = $order->payment_method === 'cod'

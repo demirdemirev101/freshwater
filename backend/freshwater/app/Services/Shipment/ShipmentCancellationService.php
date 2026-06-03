@@ -20,6 +20,14 @@ class ShipmentCancellationService
             'carrier_response' => null,
             'tracking_number' => null,
             'carrier_shipment_id' => null,
+            'return_label_url' => null,
+            'return_carrier_payload' => null,
+            'return_carrier_response' => null,
+            'return_tracking_number' => null,
+            'return_carrier_shipment_id' => null,
+            'return_status' => null,
+            'return_error_message' => null,
+            'return_sent_to_carrier_at' => null,
         ], $extra));
     }
 }

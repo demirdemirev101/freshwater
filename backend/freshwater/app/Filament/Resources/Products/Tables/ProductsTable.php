@@ -41,6 +41,23 @@ class ProductsTable
                     ->placeholder('-')
                     ->suffix('кг')
                     ->sortable(),
+                TextColumn::make('height')
+                    ->label('Височина (см)')
+                    ->placeholder('-')
+                    ->suffix('см')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('width')
+                    ->label('Ширина (см)')
+                    ->placeholder('-')
+                    ->suffix('см')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('length')
+                    ->label('Дължина (см)')
+                    ->placeholder('-')
+                    ->suffix('см')
+                    ->sortable(),
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()

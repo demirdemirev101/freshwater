@@ -7,8 +7,8 @@ use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
-use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
 class DatabaseSeeder extends Seeder
@@ -33,7 +33,7 @@ class DatabaseSeeder extends Seeder
         |--------------------------------------------------------------------------
         */
         $permissions = [
-            //Settings
+            // Settings
             'manage settings',
             // Orders
             'view orders',
@@ -47,7 +47,7 @@ class DatabaseSeeder extends Seeder
             'edit order items',
             'delete order items',
 
-            //Shipments
+            // Shipments
             'view shipments',
             'create shipments',
             'edit shipments',
@@ -58,12 +58,12 @@ class DatabaseSeeder extends Seeder
             'edit products',
             'delete products',
 
-            //Related Products
+            // Related Products
             'view related products',
             'attach related products',
             'detach related products',
 
-            //Product images
+            // Product images
             'view product images',
             'create product images',
             'delete product images',
@@ -116,35 +116,39 @@ class DatabaseSeeder extends Seeder
         |--------------------------------------------------------------------------
         */
 
-        $superAdmin = User::firstOrCreate(
-            ['email' => 'demir@abv.bg'],
-            [
-                'name' => 'Demir Demirev',
-                'phone' => '0888123456',
-                'password' => Hash::make('password'),
-            ]
-        );
-        $superAdmin->syncRoles(['superadmin']);
+        if (app()->environment(['local', 'testing']) || (bool) env('SEED_DEMO_USERS', false)) {
+            $seedPassword = (string) env('SEED_DEMO_USERS_PASSWORD', 'ChangeMe123!');
 
-        $admin = User::firstOrCreate(
-            ['email' => 'miglen@abv.bg'],
-            [
-                'name' => 'Miglen Demirev',
-                'phone' => '0888123456',
-                'password' => Hash::make('password'),
-            ]
-        );
-        $admin->syncRoles(['admin']);
+            $superAdmin = User::firstOrCreate(
+                ['email' => 'demir@abv.bg'],
+                [
+                    'name' => 'Demir Demirev',
+                    'phone' => '0888123456',
+                    'password' => Hash::make($seedPassword),
+                ]
+            );
+            $superAdmin->syncRoles(['superadmin']);
 
-        $customer = User::firstOrCreate(
-            ['email' => 'customer@example.com'],
-            [
-                'name' => 'John Doe',
-                'phone' => '0888123456',
-                'password' => Hash::make('password'),
-            ]
-        );
-        $customer->syncRoles(['customer']);
+            $admin = User::firstOrCreate(
+                ['email' => 'miglen@abv.bg'],
+                [
+                    'name' => 'Miglen Demirev',
+                    'phone' => '0888123456',
+                    'password' => Hash::make($seedPassword),
+                ]
+            );
+            $admin->syncRoles(['admin']);
+
+            $customer = User::firstOrCreate(
+                ['email' => 'customer@example.com'],
+                [
+                    'name' => 'John Doe',
+                    'phone' => '0888123456',
+                    'password' => Hash::make($seedPassword),
+                ]
+            );
+            $customer->syncRoles(['customer']);
+        }
         /*
         |--------------------------------------------------------------------------
         | Other seeders
@@ -163,6 +167,6 @@ class DatabaseSeeder extends Seeder
             'delivery_enabled' => true,
             'free_delivery_over' => 100,
         ]);
-        
+
     }
 }

@@ -3,19 +3,23 @@
 namespace App\Filament\Resources\Orders\RelationManagers;
 
 use App\Enums\OrderStatus;
+use App\Models\Shipment;
 use Carbon\Carbon;
-use Filament\Resources\RelationManagers\RelationManager;
-use Filament\Tables\Table;
 use Filament\Actions\Action;
+use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\On;
 
 class ShipmentsRelationManager extends RelationManager
 {
     protected static string $relationship = 'shipment';
+
     protected static ?string $title = 'Доставка';
+
     protected static ?string $recordTitleAttribute = 'tracking_number';
 
     #[On('orderUpdated')]
@@ -23,7 +27,6 @@ class ShipmentsRelationManager extends RelationManager
     {
         $this->getOwnerRecord()?->refresh();
 
-        // важно: typed property може още да не е инициализирана
         if (! isset($this->table)) {
             return;
         }
@@ -43,17 +46,23 @@ class ShipmentsRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
+            ->records(fn (): Collection => $this->tableRecords())
             ->columns([
                 TextColumn::make('carrier')
                     ->label('Куриер')
                     ->badge()
                     ->color('info'),
 
+                TextColumn::make('entry_type')
+                    ->label('Вид')
+                    ->badge()
+                    ->color(fn (Shipment $record): string => $record->entry_type_key === 'return' ? 'warning' : 'primary'),
+
                 TextColumn::make('tracking_number')
                     ->label('Номер за проследяване')
                     ->copyable()
                     ->copyMessage('Копирано!')
-                    ->placeholder('—'),
+                    ->placeholder('-'),
 
                 TextColumn::make('weight')
                     ->label('Тегло')
@@ -69,7 +78,7 @@ class ShipmentsRelationManager extends RelationManager
                         'success' => 'delivered',
                         'danger' => ['error', 'cancelled'],
                     ])
-                    ->formatStateUsing(fn ($state) => match($state) {
+                    ->formatStateUsing(fn (?string $state): string => match ($state) {
                         'created' => 'Създаден',
                         'pending' => 'Чака',
                         'confirmed' => 'Потвърден',
@@ -77,9 +86,10 @@ class ShipmentsRelationManager extends RelationManager
                         'in_transit' => 'В транспорт',
                         'delivered' => 'Доставен',
                         'error' => 'Грешка',
-                        'returning' => 'Returning to sender',
-                        'returned' => 'Returned to sender',
-                        'cancelled' => 'Cancelled',
+                        'returning' => 'Връща се към подателя',
+                        'returned' => 'Върната към подателя',
+                        'cancelled' => 'Анулирана',
+                        null, '' => '-',
                         default => $state,
                     }),
 
@@ -87,52 +97,106 @@ class ShipmentsRelationManager extends RelationManager
                     ->label('Създаден')
                     ->dateTime('d.m.Y H:i'),
 
-                /**
-                 * The expected_delivery_at column is customized to extract the expected delivery date from the carrier_response JSON field.
-                 * It checks if the expectedDeliveryDate is a numeric timestamp and converts it to a Carbon date instance, otherwise it displays the raw value.
-                 * If the carrier_response or expectedDeliveryDate is not available, it shows a placeholder.
-                 */
                 TextColumn::make('expected_delivery_at')
                     ->label('Очаквана дата на доставка')
-                    ->getStateUsing(function ($record) {
-                        $value =
-                            data_get($record->carrier_response, 'tracking.shipmentStatuses.0.status.deliveryDate')
-                            ?? data_get($record->carrier_response, 'tracking.shipmentStatuses.0.status.expectedDeliveryDate')
-                            ?? data_get($record->carrier_response, 'label.deliveryTime')
-                            ?? data_get($record->carrier_response, 'label.expectedDeliveryDate');
-
-                        if (is_numeric($value)) {
-                            return Carbon::createFromTimestampMs((int) $value);
-                        }
-
-                        return $value;
-                    })
                     ->dateTime('d.m.Y H:i')
-                    ->placeholder('—'),
-
+                    ->placeholder('-'),
             ])
             ->headerActions([
                 //
             ])
             ->recordActions([
-                /**
-                 * The download_label action is customized to allow users to download the shipping label if it's available.
-                 * It checks if the label_url is present and if the user has permission to view shipments before displaying the action.
-                 * The action opens the label URL in a new tab when clicked. It is only visible for shipments that are not cancelled.
-                 * The authorization logic ensures that only users with the appropriate permissions can access the shipment label,
-                 * and the visibility logic ensures that the action is not shown for cancelled shipments, providing a better user experience and security.
-                 */
                 Action::make('download_label')
                     ->label('Етикет')
                     ->icon('heroicon-o-arrow-down-tray')
                     ->color('success')
-                    ->url(fn ($record) => $record->label_url)
+                    ->url(fn (Shipment $record): ?string => $record->label_url)
                     ->openUrlInNewTab()
-                    ->authorize(fn ($record) => !empty($record->label_url) 
-                    && $record->status !== 'cancelled' && Auth::user()->can('view shipments')),
+                    ->authorize(fn (Shipment $record): bool => ! empty($record->label_url)
+                        && $record->status !== 'cancelled'
+                        && Auth::user()->can('view shipments')),
             ])
             ->emptyStateHeading('Няма доставка')
             ->emptyStateIcon('heroicon-o-truck');
+    }
+
+    public function getTableRecordKey(Model | array $record): string
+    {
+        if ($record instanceof Shipment && filled($record->table_row_key ?? null)) {
+            return (string) $record->table_row_key;
+        }
+
+        return parent::getTableRecordKey($record);
+    }
+
+    private function tableRecords(): Collection
+    {
+        $shipment = $this->getOwnerRecord()?->shipment;
+
+        if (! $shipment instanceof Shipment) {
+            return collect();
+        }
+
+        $records = collect([
+            $this->makeOutgoingRecord($shipment),
+        ]);
+
+        if (! empty($shipment->return_tracking_number)
+            || ! empty($shipment->return_status)
+            || ! empty($shipment->return_label_url)
+            || ! empty($shipment->return_carrier_shipment_id)
+        ) {
+            $records->push($this->makeReturnRecord($shipment));
+        }
+
+        return $records;
+    }
+
+    private function makeOutgoingRecord(Shipment $shipment): Shipment
+    {
+        $record = clone $shipment;
+
+        $record->forceFill([
+            'table_row_key' => 'shipment-'.$shipment->getKey().'-outgoing',
+            'entry_type' => 'Изпращане',
+            'entry_type_key' => 'outgoing',
+            'expected_delivery_at' => $this->resolveExpectedDeliveryAt($shipment->carrier_response),
+        ]);
+
+        return $record;
+    }
+
+    private function makeReturnRecord(Shipment $shipment): Shipment
+    {
+        $record = clone $shipment;
+
+        $record->forceFill([
+            'table_row_key' => 'shipment-'.$shipment->getKey().'-return',
+            'entry_type' => 'Връщане',
+            'entry_type_key' => 'return',
+            'tracking_number' => $shipment->return_tracking_number,
+            'status' => $shipment->return_status,
+            'created_at' => $shipment->return_sent_to_carrier_at ?? $shipment->created_at,
+            'expected_delivery_at' => $this->resolveExpectedDeliveryAt($shipment->return_carrier_response),
+            'label_url' => $shipment->return_label_url,
+        ]);
+
+        return $record;
+    }
+
+    private function resolveExpectedDeliveryAt(?array $carrierResponse): mixed
+    {
+        $value =
+            data_get($carrierResponse, 'tracking.shipmentStatuses.0.status.deliveryDate')
+            ?? data_get($carrierResponse, 'tracking.shipmentStatuses.0.status.expectedDeliveryDate')
+            ?? data_get($carrierResponse, 'label.deliveryTime')
+            ?? data_get($carrierResponse, 'label.expectedDeliveryDate');
+
+        if (is_numeric($value)) {
+            return Carbon::createFromTimestampMs((int) $value);
+        }
+
+        return $value;
     }
 
     public static function canViewForRecord(Model $ownerRecord, string $pageClass): bool

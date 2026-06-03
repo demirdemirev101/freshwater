@@ -3,158 +3,38 @@
 namespace App\Http\Controllers;
 
 use App\Exceptions\CheckoutException;
-use App\Http\Controllers\Controller;
-use App\Models\Order;
-use App\Models\OrderItem;
-use App\Models\Product;
+use App\Exceptions\EmptyCartException;
 use App\Services\CartService;
-use App\Services\Econt\EcontCityResolverService;
+use App\Services\CartSessionResolverService;
+use App\Services\CheckoutSupportService;
 use App\Services\OrderService;
-use App\Services\SettingsService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Session;
 
 class CheckoutController extends Controller
 {
-    /**
-     * Resolve CartService using the session_id sent by the React client.
-     * This keeps checkout pricing aligned with the cart endpoints instead of falling back to Laravel's cookie session ID.
-     * If user is authenticated, ignore session_id and use user cart.
-     */
-    private function getCartService(Request $request): CartService
+    private function getCartService(Request $request, CartSessionResolverService $cartSessionResolver): CartService
     {
         if (Auth::check()) {
             return new CartService(null);
         }
 
-        return new CartService($this->frontendCartSessionId($request));
-    }
-
-    private function frontendCartSessionId(Request $request): ?string
-    {
-        $sessionId = $request->input('session_id')
-            ?? $request->input('sessionId')
-            ?? $request->query('session_id')
-            ?? $request->query('sessionId')
-            ?? $request->header('X-Cart-Session-Id');
-
-        if (! is_scalar($sessionId)) {
-            return null;
-        }
-
-        $sessionId = trim((string) $sessionId);
-
-        if ($sessionId === '') {
-            return null;
-        }
-
-        Session::put('cart_session_id', $sessionId);
-
-        return $sessionId;
-    }
-
-    /**
-     * Build temporary order items from request payload when the React page has not synced a server cart yet.
-     */
-    private function buildItemsFromRequest(array $items): Collection
-    {
-        $products = Product::query()
-            ->whereIn('id', collect($items)->pluck('product_id')->all())
-            ->get()
-            ->keyBy('id');
-
-        return collect($items)->map(function (array $item) use ($products) {
-            $product = $products->get($item['product_id']);
-            $quantity = (int) $item['quantity'];
-            $price = (float) ($product?->sale_price ?? $product?->price ?? 0);
-
-            $orderItem = new OrderItem([
-                'product_id' => $item['product_id'],
-                'price' => $price,
-                'quantity' => $quantity,
-                'total' => $price * $quantity,
-            ]);
-            $orderItem->setRelation('product', $product);
-
-            return $orderItem;
-        });
-    }
-
-    /**
-     * Normalize raw Econt office payloads into a stable frontend-friendly shape.
-     */
-    private function normalizeEcontOffice(array $office): array
-    {
-        $code = $office['code']
-            ?? $office['officeCode']
-            ?? $office['office_code']
-            ?? $office['id']
-            ?? null;
-
-        $name = $office['name']
-            ?? $office['officeName']
-            ?? $office['office_name']
-            ?? $office['fullName']
-            ?? null;
-
-        $city = $office['city']
-            ?? $office['cityName']
-            ?? data_get($office, 'address.city.name')
-            ?? data_get($office, 'address.cityName')
-            ?? null;
-
-        $address = $office['address']
-            ?? $office['fullAddress']
-            ?? $office['addressLine']
-            ?? $office['streetAddress']
-            ?? null;
-
-        if (is_array($address)) {
-            $address = $address['fullAddress']
-                ?? $address['addressLine']
-                ?? $address['streetAddress']
-                ?? trim(implode(' ', array_filter([
-                    $address['street'] ?? null,
-                    $address['num'] ?? null,
-                    $address['quarter'] ?? null,
-                ])));
-        }
-
-        return [
-            'code' => $code !== null ? (string) $code : null,
-            'name' => $name !== null ? (string) $name : null,
-            'city' => $city !== null ? (string) $city : null,
-            'address' => is_string($address) && trim($address) !== '' ? trim($address) : null,
-        ];
+        return new CartService($cartSessionResolver->rememberFromRequest($request));
     }
 
     /**
      * Return Econt offices for a city in a stable JSON shape used by the React checkout.
      */
-    public function econtOffices(Request $request, EcontCityResolverService $econtCityResolverService)
+    public function econtOffices(Request $request, CheckoutSupportService $checkoutSupportService)
     {
         $validated = $request->validate([
             'city' => 'required|string',
         ]);
 
         $city = trim($validated['city']);
-        try {
-            $offices = collect($econtCityResolverService->getOffices($city))
-                ->filter(fn ($office) => is_array($office))
-                ->map(fn (array $office) => $this->normalizeEcontOffice($office))
-                ->filter(fn (array $office) => ! empty($office['code']) && ! empty($office['name']))
-                ->values();
-        } catch (\Throwable $e) {
-            Log::error('Econt offices endpoint failed', [
-                'city' => $city,
-                'error' => $e->getMessage(),
-            ]);
-
-            $offices = collect();
-        }
+        $offices = $checkoutSupportService->officesForCity($city);
 
         Log::info('Econt offices lookup response', [
             'city' => $city,
@@ -170,7 +50,11 @@ class CheckoutController extends Controller
      * Calculate shipping cost for the current cart based on shipping address.
      * This is used by frontend to show shipping cost before checkout.
      */
-    public function calculateShipping(Request $request, SettingsService $settingsService)
+    public function calculateShipping(
+        Request $request,
+        CheckoutSupportService $checkoutSupportService,
+        CartSessionResolverService $cartSessionResolver
+    )
     {
         $validated = $request->validate([
             'customer_name' => 'nullable|string',
@@ -188,102 +72,57 @@ class CheckoutController extends Controller
             'items.*.quantity' => 'required_with:items|integer|min:1',
         ]);
 
-        $cartService = $this->getCartService($request);
-        $requestedSessionId = $this->frontendCartSessionId($request);
-        $cartItems = $cartService->items();
-        $requestItems = ! empty($validated['items'])
-            ? $this->buildItemsFromRequest($validated['items'])
-            : collect();
-        $effectiveItems = $cartItems->isNotEmpty() ? $cartItems : $requestItems;
-        $effectiveSubtotal = $cartItems->isNotEmpty()
-            ? $cartService->subtotal()
-            : (float) $requestItems->sum('total');
+        $requestedSessionId = $cartSessionResolver->rememberFromRequest($request);
+        $cartService = $this->getCartService($request, $cartSessionResolver);
 
-        $tempOrder = new Order([
-            'customer_name' => $validated['customer_name'] ?? 'Shipping Estimate',
-            'customer_email' => $validated['customer_email'] ?? null,
-            'customer_phone' => $validated['customer_phone'] ?? (string) config('services.econt.sender.phone', '0000000000'),
-            'subtotal' => $effectiveSubtotal,
-            'shipping_method' => $validated['shipping_method'],
-            'shipping_address' => $validated['shipping_address'] ?? '',
-            'shipping_city' => $validated['shipping_city'],
-            'shipping_postcode' => $validated['shipping_postcode'] ?? null,
-            'econt_office_code' => $validated['shipping_method'] === 'address'
-                ? null
-                : ($validated['econt_office_code'] ?? null),
-            'payment_method' => $validated['payment_method'] ?? null,
-        ]);
-        $tempOrder->setRelation('items', $effectiveItems);
-
-        if ($effectiveItems->isEmpty()) {
-            Log::warning('calculate shipping skipped because cart is empty', [
-                'requested_session_id' => $requestedSessionId,
-                'resolved_session_id' => $cartService->getSessionId(),
-                'user_id' => Auth::id(),
-                'shipping_method' => $validated['shipping_method'],
-                'shipping_city' => $validated['shipping_city'],
-            ]);
-
+        try {
+            return response()->json(
+                $checkoutSupportService->estimateShipping($validated, $cartService, $requestedSessionId, Auth::id())
+            );
+        } catch (EmptyCartException $e) {
             return response()->json([
                 'shipping_price' => 0.0,
-                'message' => 'Cart is empty.',
+                'message' => $e->getMessage(),
             ], 422);
         }
-
-        // Use a live estimate here so the checkout UI can show Econt pricing
-        // even for payment methods that are deferred in the final order flow.
-        $tempOrder->shipping_price = $settingsService->estimateShipping($tempOrder);
-
-        Log::info('calculate shipping price', [
-            'requested_session_id' => $requestedSessionId,
-            'resolved_session_id' => $cartService->getSessionId(),
-            'user_id' => Auth::id(),
-            'subtotal' => $effectiveSubtotal,
-            'shipping_price' => $tempOrder->shipping_price ?? 0.0,
-            'order_id' => $tempOrder->id,
-            'items_count' => $effectiveItems->count(),
-            'items_source' => $cartItems->isNotEmpty() ? 'cart' : 'request',
-            'econt_office_code' => $tempOrder->econt_office_code,
-            'shipping_method' => $tempOrder->shipping_method,
-            'payment_method' => $tempOrder->payment_method,
-        ]);
-
-        return response()->json([
-            'shipping_price' => $tempOrder->shipping_price ?? 0.0,
-        ]);
     }
+
     /**
      * Process the checkout by validating the request data and creating an order using the OrderService.
-      * @param \Illuminate\Http\Request $request
-      * @param \App\Services\OrderService $orderService
-      * @return \Illuminate\Http\JsonResponse
-      * @throws \App\Exceptions\CheckoutException
+     *
+     * @return JsonResponse
+     *
+     * @throws CheckoutException
      */
-    public function store(Request $request, OrderService $orderService) 
+    public function store(
+        Request $request,
+        OrderService $orderService,
+        CartSessionResolverService $cartSessionResolver
+    )
     {
         $validated = $request->validate([
-            'customer_name'     => 'required|string',
-            'customer_email'    => 'required|email',
-            'customer_phone'    => 'nullable|string',
-            'shipping_method'   => 'required|in:address,office,apm',
-            'shipping_address'  => 'required_if:shipping_method,address|string',
-            'shipping_city'     => 'required|string',
+            'customer_name' => 'required|string',
+            'customer_email' => 'required|email',
+            'customer_phone' => 'nullable|string',
+            'shipping_method' => 'required|in:address,office,apm',
+            'shipping_address' => 'required_if:shipping_method,address|string',
+            'shipping_city' => 'required|string',
             'shipping_postcode' => 'nullable|string',
             'econt_office_code' => 'required_if:shipping_method,office,apm|string',
-            'payment_method'    => 'required|in:bank_transfer,cod',
-            'session_id'       => 'sometimes|string',
-            'notes'             => 'nullable|string',
-            'items'             => 'required|array|min:1',
+            'payment_method' => 'required|in:bank_transfer,cod',
+            'session_id' => 'sometimes|string',
+            'notes' => 'nullable|string',
+            'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|integer|exists:products,id',
-            'items.*.quantity'   => 'required|integer|min:1',
+            'items.*.quantity' => 'required|integer|min:1',
         ]);
-        $validated['session_id'] = $this->frontendCartSessionId($request);
+        $validated['session_id'] = $cartSessionResolver->rememberFromRequest($request);
 
         try {
             $order = $orderService->createFromItems($validated);
 
             return response()->json([
-                'success'  => true,
+                'success' => true,
                 'order_id' => $order->id,
             ]);
 
@@ -291,10 +130,10 @@ class CheckoutController extends Controller
             Log::error('Checkout failed', [
                 'error' => $e->getMessage(),
             ]);
-            
+
             return response()->json([
                 'success' => false,
-                'message' => 'An unexpected error occurred during checkout. Please try again later.',
+                'message' => 'Възникна неочаквана грешка при завършване на поръчката. Моля, опитайте отново по-късно.',
             ], $e->getCode() ?: 422);
 
         } catch (\Exception $e) {
@@ -304,7 +143,7 @@ class CheckoutController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'An unexpected error occurred during checkout. Please try again later.',
+                'message' => 'Възникна неочаквана грешка при завършване на поръчката. Моля, опитайте отново по-късно.',
             ], 500);
         }
     }

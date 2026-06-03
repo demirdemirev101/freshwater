@@ -22,12 +22,12 @@ class AdminContactMessageMail extends Mailable
 
     public function build()
     {
-        return $this->subject('New Contact Message Received')
+        return $this->subject('Получено е ново съобщение от формата за контакт')
                     ->view('emails.admin_contact_message')
                     ->with([
                         'name' => $this->contact->name,
                         'email' => $this->contact->email,
-                        'phone' => $this->contact->phone ?? 'N/A',
+                        'phone' => $this->contact->phone ?? 'Няма',
                         'messageContent' => $this->contact->message,
                     ]);
     }

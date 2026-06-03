@@ -19,7 +19,7 @@ class ShipmentTrackingMail extends Mailable
 
         return $this
             ->subject('Вашата поръчка е изпратена')
-            ->markdown('emails.shipment.tracking', [
+            ->view('emails.shipment.tracking', [
                 'shipment' => $shipment,
                 'trackingNumber' => $shipment?->tracking_number,
                 'labelUrl' => $shipment?->label_url,

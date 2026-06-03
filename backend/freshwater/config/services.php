@@ -35,18 +35,18 @@ return [
         ],
     ],
 
-   'econt' => [
-        'enabled' => env('ECONT_ENABLED'),
-        'sandbox' => env('ECONT_SANDBOX'),
-        'verify_ssl' => env('ECONT_VERIFY_SSL'),
-        
+    'econt' => [
+        'enabled' => env('ECONT_ENABLED', false),
+        'sandbox' => env('ECONT_SANDBOX', true),
+        'verify_ssl' => env('ECONT_VERIFY_SSL', true),
+
         'base_url' => env('ECONT_BASE_URL', 'https://demo.econt.com/ee/services'),
         // За реална среда: 'https://ee.econt.com/services'
         'track_url' => env('ECONT_TRACK_URL', null),
-        
-        'username' => env('ECONT_USERNAME', 'test_username'),
-        'password' => env('ECONT_PASSWORD', 'test_password'),
-        
+
+        'username' => env('ECONT_USERNAME'),
+        'password' => env('ECONT_PASSWORD'),
+
         // Данни на изпращача
         'sender' => [
             'name' => env('ECONT_SENDER_NAME', 'Freshwater'),

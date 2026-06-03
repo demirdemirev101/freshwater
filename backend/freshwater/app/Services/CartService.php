@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Cart;
 use App\Models\Product;
+use App\Support\SensitiveValue;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -13,6 +14,7 @@ use Illuminate\Validation\ValidationException;
 class CartService
 {
     protected Cart $cart;
+
     protected ?string $sessionId;
 
     /**
@@ -45,14 +47,14 @@ class CartService
 
             if ($item) {
                 $item->quantity += $quantity;
-                $item->total    = $item->quantity * $price;
+                $item->total = $item->quantity * $price;
                 $item->save();
             } else {
                 $this->cart->items()->create([
                     'product_id' => $product->id,
-                    'quantity'   => $quantity,
-                    'price'      => $price,
-                    'total'      => $quantity * $price,
+                    'quantity' => $quantity,
+                    'price' => $price,
+                    'total' => $quantity * $price,
                 ]);
             }
         });
@@ -72,7 +74,7 @@ class CartService
             ->where('product_id', $product->id)
             ->update([
                 'quantity' => $quantity,
-                'total'    => $quantity * $price,
+                'total' => $quantity * $price,
             ]);
     }
 
@@ -114,30 +116,33 @@ class CartService
      */
     public function mergeGuestCartToUser(): void
     {
-        if (!Auth::check()) {
+        if (! Auth::check()) {
             Log::warning('Guest cart merge skipped because no user is authenticated', [
-                'session_id' => $this->sessionId,
+                'session_id_fingerprint' => SensitiveValue::fingerprint($this->sessionId),
             ]);
+
             return;
         }
 
         $guestCart = Cart::where('session_id', $this->sessionId)->first();
-        $userCart  = Cart::where('user_id', Auth::id())->first();
+        $userCart = Cart::where('user_id', Auth::id())->first();
 
-        if (!$guestCart) {
+        if (! $guestCart) {
             Log::info('Guest cart merge skipped because guest cart was not found', [
-                'session_id' => $this->sessionId,
+                'session_id_fingerprint' => SensitiveValue::fingerprint($this->sessionId),
                 'user_id' => Auth::id(),
             ]);
+
             return;
         }
 
         DB::transaction(function () use ($guestCart, $userCart) {
-            if (!$userCart) {
+            if (! $userCart) {
                 $guestCart->update([
-                    'user_id'    => Auth::id(),
+                    'user_id' => Auth::id(),
                     'session_id' => null,
                 ]);
+
                 return;
             }
 
@@ -148,14 +153,14 @@ class CartService
 
                 if ($userItem) {
                     $userItem->quantity += $guestItem->quantity;
-                    $userItem->total     = $userItem->quantity * $userItem->price;
+                    $userItem->total = $userItem->quantity * $userItem->price;
                     $userItem->save();
                 } else {
                     $userCart->items()->create([
                         'product_id' => $guestItem->product_id,
-                        'quantity'   => $guestItem->quantity,
-                        'price'      => $guestItem->price,
-                        'total'      => $guestItem->total,
+                        'quantity' => $guestItem->quantity,
+                        'price' => $guestItem->price,
+                        'total' => $guestItem->total,
                     ]);
                 }
             }
@@ -164,7 +169,10 @@ class CartService
             $guestCart->delete();
         });
 
-        Log::info("Merged guest cart (session_id: {$this->sessionId}) into user cart (user_id: " . Auth::id() . ")");
+        Log::info('Merged guest cart into user cart', [
+            'session_id_fingerprint' => SensitiveValue::fingerprint($this->sessionId),
+            'user_id' => Auth::id(),
+        ]);
     }
 
     public function hasGuestCart(): bool

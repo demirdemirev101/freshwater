@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Models\Order;
+use App\Services\OrderDeliveryDetailsService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
@@ -20,11 +21,14 @@ class OrderConfirmationMail extends Mailable
 
     public function build()
     {
+        $deliveryDetails = app(OrderDeliveryDetailsService::class)->forEmail($this->order);
+
         return $this
             ->subject('Потвърждение на поръчката #' .  $this->order->id)
             ->view('emails.order-confirmation')
             ->with([
                 'order' => $this->order,
+                'deliveryDetails' => $deliveryDetails,
             ]);
     }
 }

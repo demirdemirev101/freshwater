@@ -11,7 +11,6 @@ class ShipmentPollingPolicy
     private const SHIPMENT_POLL_STOP_STATUSES = [
         OrderStatus::COMPLETED->value,
         OrderStatus::CANCELLED->value,
-        OrderStatus::RETURN_REQUESTED->value,
         OrderStatus::RETURNED->value,
     ];
 
@@ -23,7 +22,7 @@ class ShipmentPollingPolicy
     {
         return in_array($record->status, self::SHIPMENT_POLL_STOP_STATUSES, true);
     }
-    
+
     /**
      * Determines if shipment polling should continue for the current order. Polling should continue
      *  if the order has a shipment with a carrier shipment ID and is not in a status that indicates it should stop.
@@ -38,7 +37,10 @@ class ShipmentPollingPolicy
             return false;
         }
 
+        if ($record->status === OrderStatus::RETURN_REQUESTED->value) {
+            return ! empty($record->shipment?->return_carrier_shipment_id);
+        }
+
         return ! empty($record->shipment?->carrier_shipment_id);
     }
-
 }

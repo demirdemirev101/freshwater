@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Events\OrderPlaced;
 use App\Events\OrderReadyForShipment;
+use App\Events\ShipmentCreated;
 use App\Listeners\ClearCartAfterOrder;
 use App\Listeners\CreateEcontShipment;
 use App\Listeners\CreateShipment;
@@ -39,6 +40,12 @@ class EventServiceProvider extends ServiceProvider
      */
         OrderReadyForShipment::class => [
             CreateEcontShipment::class,
+        ],
+    /**
+     * The event to listener mappings for sending shipments
+     *  to Econt only after a shipment row exists locally.
+     */
+        ShipmentCreated::class => [
             SendShipmentToEcont::class,
         ],
     ];

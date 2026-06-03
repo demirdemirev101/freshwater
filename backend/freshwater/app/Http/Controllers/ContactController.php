@@ -2,17 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Mail\AdminContactMessageMail;
-use App\Models\Contact;
+use App\Services\ContactService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Mail;
 
 class ContactController extends Controller
 {
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(Request $request, ContactService $contactService)
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -21,10 +19,8 @@ class ContactController extends Controller
             'message' => 'required|string',
         ]);
 
-        $contact = Contact::create($validated);
+        $contactService->submit($validated);
 
-        Mail::to(config('mail.admin_address'))->send(new AdminContactMessageMail($contact));
-
-        return response()->json(['message' => 'Your message has been received. We will get back to you shortly.'], 201);
+        return response()->json(['message' => 'Съобщението ви беше получено. Ще се свържем с вас възможно най-скоро.'], 201);
     }
 }

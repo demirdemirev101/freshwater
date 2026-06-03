@@ -17,11 +17,14 @@ class EcontService
 {
     // Define maximum JSON body size to prevent memory issues in queue workers
     private const MAX_JSON_BODY_BYTES = 16777216;
+
     // Define a smaller size for logging previews to avoid logging excessively large payloads
     private const LOG_BODY_PREVIEW_BYTES = 1024;
 
     private string $baseUrl;
+
     private string $username;
+
     private string $password;
 
     // Initialize the service with configuration values for the Econt API
@@ -35,22 +38,22 @@ class EcontService
     /**
      * Create a shipment label with the Econt API. The method accepts a payload array containing all necessary information for the label creation,
      *  and a mode which can be 'create', 'calculate' or 'validate'.
-     *  It sends a POST request to the Econt API and handles the response, 
+     *  It sends a POST request to the Econt API and handles the response,
      *  including error logging and exception throwing for any API errors or invalid responses.
      */
     public function createLabel(array $payload, string $mode = 'create'): array
     {
+        $this->ensureConfigured();
+
         // Extract the receiver city from the payload for logging purposes, as it can be useful for diagnosing issues related to specific locations.
         $receiverCity = $payload['receiverAddress']['city'] ?? null;
 
-        Log::info('FINAL ECONT PAYLOAD', [
-            'city' => $receiverCity,
-        ]);
-        
+        Log::info('Econt createLabel request', $this->summarizeLabelPayload($payload, $mode));
+
         // Send the request to the Econt API with appropriate options and authentication.
         $response = Http::withOptions([
-                'verify' => config('services.econt.verify_ssl'),
-            ])
+            'verify' => config('services.econt.verify_ssl'),
+        ])
             ->timeout(30)
             ->withBasicAuth($this->username, $this->password)
             ->post("{$this->baseUrl}/Shipments/LabelService.createLabel.json", [
@@ -73,16 +76,16 @@ class EcontService
             ]);
             // Attempt to extract a meaningful error message from the API response, which may be nested in various fields,
             // to provide better context in the exception.
-            $errorMessage = $this->extractErrorMessage($json['error'] ?? $json) ?? 'Unknown error';
+            $errorMessage = $this->extractErrorMessage($json['error'] ?? $json) ?? 'Непозната грешка';
 
-            throw new RuntimeException('Econt API error: ' . $errorMessage);
+            throw new RuntimeException('Грешка от API на Еконт: '.$errorMessage);
         }
 
         // Even if the HTTP response is successful, the Econt API might return an error in the JSON body, so we check for that as well.
         if (isset($json['error'])) {
-            $errorMessage = $this->extractErrorMessage($json['error']) ?? 'Unknown error';
+            $errorMessage = $this->extractErrorMessage($json['error']) ?? 'Непозната грешка';
 
-            throw new RuntimeException('Econt error: ' . $errorMessage);
+            throw new RuntimeException('Грешка от Еконт: '.$errorMessage);
         }
 
         return $json;
@@ -95,9 +98,11 @@ class EcontService
      */
     public function trackShipment(string $shipmentNumber): array
     {
+        $this->ensureConfigured();
+
         $response = Http::withOptions([
-                'verify' => config('services.econt.verify_ssl'),
-            ])
+            'verify' => config('services.econt.verify_ssl'),
+        ])
             ->withBasicAuth($this->username, $this->password)
             ->post("{$this->baseUrl}/Shipments/ShipmentService.getShipmentStatuses.json", [
                 'shipmentNumbers' => [$shipmentNumber],
@@ -109,17 +114,18 @@ class EcontService
                 'status' => $response->status(),
             ]);
 
-            throw new RuntimeException('Econt tracking error');
+            throw new RuntimeException('Грешка при проследяване в Еконт.');
         }
 
         return $this->decodeJsonResponse($response, 'trackShipment');
     }
+
     /**
      * Extracts an error message from nested error data.
      */
     private function extractErrorMessage(?array $data): ?string
     {
-        if (!$data) {
+        if (! $data) {
             return null;
         }
 
@@ -145,7 +151,7 @@ class EcontService
 
     /**
      * Decode JSON responses with a hard cap to protect queue workers from oversized payloads.
-     * If the response body exceeds the defined maximum size, an exception is thrown to prevent memory issues. 
+     * If the response body exceeds the defined maximum size, an exception is thrown to prevent memory issues.
      * This method also ensures that the decoded JSON is an array and throws an exception if the JSON is invalid or not in the expected format.
      */
     private function decodeJsonResponse(Response $response, string $context): array
@@ -153,13 +159,13 @@ class EcontService
         [$body, $truncated] = $this->readResponseBody($response, self::MAX_JSON_BODY_BYTES);
 
         if ($truncated) {
-            throw new RuntimeException("Econt {$context} response exceeded " . self::MAX_JSON_BODY_BYTES . ' bytes.');
+            throw new RuntimeException("Отговорът от Еконт за {$context} надвиши ".self::MAX_JSON_BODY_BYTES.' байта.');
         }
 
         $decoded = json_decode($body, true);
 
         if (! is_array($decoded)) {
-            throw new RuntimeException("Econt {$context} returned invalid JSON.");
+            throw new RuntimeException("Еконт върна невалиден JSON за {$context}.");
         }
 
         return $decoded;
@@ -172,14 +178,14 @@ class EcontService
     {
         [$body, $truncated] = $this->readResponseBody($response, self::LOG_BODY_PREVIEW_BYTES);
 
-        return $truncated ? $body . '...[truncated]' : $body;
+        return $truncated ? $body.'...[truncated]' : $body;
     }
 
     /**
      * @return array{0: string, 1: bool}
-     * Reads the response body up to a specified maximum number of bytes. Returns the body content and a boolean indicating if it was truncated.
-     * This method ensures that we do not read more than the allowed number of bytes,
-     *  which helps protect against memory issues in queue workers when dealing with large API responses.
+     *                                   Reads the response body up to a specified maximum number of bytes. Returns the body content and a boolean indicating if it was truncated.
+     *                                   This method ensures that we do not read more than the allowed number of bytes,
+     *                                   which helps protect against memory issues in queue workers when dealing with large API responses.
      */
     private function readResponseBody(Response $response, int $maxBytes): array
     {
@@ -211,30 +217,36 @@ class EcontService
      */
     public function downloadLabel(string $shipmentNumber): ?string
     {
+        $this->ensureConfigured();
+
         $response = Http::withOptions([
-                'verify' => config('services.econt.verify_ssl'),
-            ])
+            'verify' => config('services.econt.verify_ssl'),
+        ])
             ->withBasicAuth($this->username, $this->password)
             ->post("{$this->baseUrl}/Shipments/LabelService.printLabels.json", [
                 'shipmentNumbers' => [$shipmentNumber],
             ]);
         if ($response->successful()) {
             $data = $this->decodeJsonResponse($response, 'downloadLabel');
+
             return $data['pdfURL'] ?? null;
         }
 
         return null;
     }
+
     /**
      * Delete shipment labels for the given shipment numbers. This method sends a request to the Econt API to delete the specified labels
-     *  and handles the response, including error logging and exception throwing for any API errors or invalid responses. 
+     *  and handles the response, including error logging and exception throwing for any API errors or invalid responses.
      * The method returns the API response as an array if the deletion is successful, or throws an exception if there are errors.
      */
     public function deleteLabels(array $shipmentNumbers): array
     {
+        $this->ensureConfigured();
+
         $response = Http::withOptions([
-                'verify' => config('services.econt.verify_ssl'),
-            ])
+            'verify' => config('services.econt.verify_ssl'),
+        ])
             ->withBasicAuth($this->username, $this->password)
             ->post("{$this->baseUrl}/Shipments/LabelService.deleteLabels.json", [
                 'shipmentNumbers' => $shipmentNumbers,
@@ -250,31 +262,34 @@ class EcontService
                 'shipment_numbers' => $shipmentNumbers,
             ]);
 
-            $errorMessage = $this->extractErrorMessage($json['error'] ?? $json) ?? 'Unknown error';
+            $errorMessage = $this->extractErrorMessage($json['error'] ?? $json) ?? 'Непозната грешка';
 
-            throw new RuntimeException('Econt API error: ' . $errorMessage);
+            throw new RuntimeException('Грешка от API на Еконт: '.$errorMessage);
         }
 
         if (isset($json['error'])) {
-            $errorMessage = $this->extractErrorMessage($json['error']) ?? 'Unknown error';
+            $errorMessage = $this->extractErrorMessage($json['error']) ?? 'Непозната грешка';
 
-            throw new RuntimeException('Econt error: ' . $errorMessage);
+            throw new RuntimeException('Грешка от Еконт: '.$errorMessage);
         }
 
         return $json;
     }
+
     /**
-     * Fetch a list of cities from the Econt API, optionally filtered by a search term. 
+     * Fetch a list of cities from the Econt API, optionally filtered by a search term.
      * This method sends a request to the Econt API to retrieve the list of cities
-     *  and returns an array of cities that match the search criteria. 
+     *  and returns an array of cities that match the search criteria.
      * It includes error handling to ensure that any issues with the API request are properly logged
      *  and do not cause unhandled exceptions in the application.
      */
     public function getCities(string $search = ''): array
     {
+        $this->ensureConfigured();
+
         $response = Http::withOptions([
-                'verify' => config('services.econt.verify_ssl'),
-            ])
+            'verify' => config('services.econt.verify_ssl'),
+        ])
             ->withBasicAuth($this->username, $this->password)
             ->post("{$this->baseUrl}/Nomenclatures/NomenclaturesService.getCities.json", [
                 'countryCode' => 'BGR',
@@ -283,6 +298,7 @@ class EcontService
 
         if ($response->successful()) {
             $data = $this->decodeJsonResponse($response, 'getCities');
+
             return is_array($data['cities'] ?? null) ? $data['cities'] : [];
         }
 
@@ -298,6 +314,8 @@ class EcontService
      */
     public function getOffices(?int $cityId = null): array
     {
+        $this->ensureConfigured();
+
         $payload = [
             'countryCode' => 'BGR',
         ];
@@ -307,13 +325,14 @@ class EcontService
         }
 
         $response = Http::withOptions([
-                'verify' => config('services.econt.verify_ssl'),
-            ])
+            'verify' => config('services.econt.verify_ssl'),
+        ])
             ->withBasicAuth($this->username, $this->password)
             ->post("{$this->baseUrl}/Nomenclatures/NomenclaturesService.getOffices.json", $payload);
 
         if ($response->successful()) {
             $data = $this->decodeJsonResponse($response, 'getOffices');
+
             return is_array($data['offices'] ?? null) ? $data['offices'] : [];
         }
 
@@ -326,33 +345,58 @@ class EcontService
      *  and do not cause unhandled exceptions in the application. If the API call fails or the expected data is not present in the response, it returns null.
      */
     public function calculatePrice(array $payload): ?float
-{
-    try {
-        $response = Http::withOptions([
-            'verify' => config('services.econt.verify_ssl'),
-        ])
-        ->withBasicAuth($this->username, $this->password)
-        ->post("{$this->baseUrl}/Shipments/LabelService.createLabel.json", [
-            'label' => $payload,
-            'mode' => 'calculate',
-        ]);
+    {
+        try {
+            $this->ensureConfigured();
 
-        if ($response->successful()) {
-            $data = $this->decodeJsonResponse($response, 'calculatePrice');
-            return $data['label']['totalPrice'] ?? null;
-        } else {
-            // Логване на грешка
-            Log::error('Econt price calculation failed', [
-                'status' => $response->status(),
-                'body_preview' => $this->getResponseBodyPreview($response),
+            $response = Http::withOptions([
+                'verify' => config('services.econt.verify_ssl'),
+            ])
+                ->withBasicAuth($this->username, $this->password)
+                ->post("{$this->baseUrl}/Shipments/LabelService.createLabel.json", [
+                    'label' => $payload,
+                    'mode' => 'calculate',
+                ]);
+
+            if ($response->successful()) {
+                $data = $this->decodeJsonResponse($response, 'calculatePrice');
+
+                return $data['label']['totalPrice'] ?? null;
+            } else {
+                // Логване на грешка
+                Log::error('Econt price calculation failed', [
+                    'status' => $response->status(),
+                    'body_preview' => $this->getResponseBodyPreview($response),
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Econt price calculation exception', [
+                'error' => $e->getMessage(),
             ]);
         }
-    } catch (\Exception $e) {
-        Log::error('Econt price calculation exception', [
-            'error' => $e->getMessage(),
-        ]);
+
+        return null;
     }
 
-    return null;
-}
+    private function ensureConfigured(): void
+    {
+        if ($this->baseUrl === '' || $this->username === '' || $this->password === '') {
+            throw new RuntimeException('Липсват конфигурирани идентификационни данни за Еконт.');
+        }
+    }
+
+    private function summarizeLabelPayload(array $payload, string $mode): array
+    {
+        return [
+            'mode' => $mode,
+            'shipment_type' => $payload['shipmentType'] ?? null,
+            'pack_count' => $payload['packCount'] ?? null,
+            'weight' => $payload['weight'] ?? null,
+            'receiver_city' => data_get($payload, 'receiverAddress.city.name'),
+            'receiver_office_code' => $payload['receiverOfficeCode'] ?? null,
+            'sender_office_code' => $payload['senderOfficeCode'] ?? null,
+            'has_cod' => data_get($payload, 'services.cdAmount') !== null,
+            'has_declared_value' => data_get($payload, 'services.declaredValueAmount') !== null,
+        ];
+    }
 }
