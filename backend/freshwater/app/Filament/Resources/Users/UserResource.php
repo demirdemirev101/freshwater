@@ -9,14 +9,14 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-use Filament\Forms\Components\Select;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
-use \Illuminate\Database\Eloquent\Model;
 
 class UserResource extends Resource
 {
@@ -26,9 +26,10 @@ class UserResource extends Resource
 
     protected static ?string $navigationLabel = 'Потребители';
 
-    /* ===============================
-     | Access
-     =============================== */
+    protected static string|\UnitEnum|null $navigationGroup = 'Система';
+
+    protected static ?int $navigationSort = 2;
+
     public static function canAccess(): bool
     {
         return Auth::user()->can('view users');
@@ -39,9 +40,6 @@ class UserResource extends Resource
         return Auth::user()->can('view users');
     }
 
-    /* ===============================
-     | CRUD
-     =============================== */
     public static function canCreate(): bool
     {
         return Auth::user()->can('create users');
@@ -49,7 +47,6 @@ class UserResource extends Resource
 
     public static function canEdit(Model $record): bool
     {
-        // ❌ admin не може да редактира superadmin
         if ($record->hasRole('superadmin')) {
             return false;
         }
@@ -59,7 +56,6 @@ class UserResource extends Resource
 
     public static function canDelete(Model $record): bool
     {
-        // ❌ никой не трие superadmin
         if ($record->hasRole('superadmin')) {
             return false;
         }
@@ -108,10 +104,6 @@ class UserResource extends Resource
                         'superadmin' => 'success',
                         default => 'gray',
                     }),
-
-            ])
-            ->filters([
-                //
             ])
             ->recordActions([
                 EditAction::make()

@@ -9,9 +9,13 @@ use Illuminate\Support\Facades\DB;
 
 class CancelledReturnedPerDayChart extends ChartWidget
 {
-    protected ?string $heading = 'Върнати и анулирани поръчки през последните 14 дни';
+    protected ?string $heading = 'Анулирани и върнати поръчки';
+
     protected static ?int $sort = 2;
+
     protected ?string $pollingInterval = '100s';
+
+    protected int | string | array $columnSpan = 1;
 
     protected function getData(): array
     {
@@ -22,7 +26,7 @@ class CancelledReturnedPerDayChart extends ChartWidget
             'labels' => $days->map(fn (Carbon $day) => $day->format('d M'))->all(),
             'datasets' => [
                 [
-                    'label' => 'Отказани',
+                    'label' => 'Анулирани',
                     'data' => $days->map(fn (Carbon $day) => $counts[$day->toDateString()]['cancelled'] ?? 0)->all(),
                     'borderColor' => '#ef4444',
                     'backgroundColor' => 'rgba(239, 68, 68, 0.2)',
@@ -46,9 +50,6 @@ class CancelledReturnedPerDayChart extends ChartWidget
         return 'line';
     }
 
-    /**
-     * @return \Illuminate\Support\Collection<int, Carbon>
-     */
     private function lastDays(int $count)
     {
         $start = now()->subDays($count - 1)->startOfDay();

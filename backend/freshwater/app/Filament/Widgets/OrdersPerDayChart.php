@@ -9,10 +9,13 @@ use Illuminate\Support\Facades\DB;
 
 class OrdersPerDayChart extends ChartWidget
 {
-    protected ?string $heading = 'Поръчки за деня';
+    protected ?string $heading = 'Поръчки за последните 14 дни';
+
     protected static ?int $sort = 1;
 
     protected ?string $pollingInterval = '100s';
+
+    protected int | string | array $columnSpan = 1;
 
     protected function getData(): array
     {
@@ -23,7 +26,7 @@ class OrdersPerDayChart extends ChartWidget
             'labels' => $days->map(fn (Carbon $day) => $day->format('d M'))->all(),
             'datasets' => [
                 [
-                    'label' => 'Orders',
+                    'label' => 'Поръчки',
                     'data' => $days->map(fn (Carbon $day) => $counts[$day->toDateString()] ?? 0)->all(),
                     'borderColor' => '#f59e0b',
                     'backgroundColor' => 'rgba(245, 158, 11, 0.2)',
@@ -39,9 +42,6 @@ class OrdersPerDayChart extends ChartWidget
         return 'line';
     }
 
-    /**
-     * @return \Illuminate\Support\Collection<int, Carbon>
-     */
     private function lastDays(int $count)
     {
         $start = now()->subDays($count - 1)->startOfDay();

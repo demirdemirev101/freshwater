@@ -38,7 +38,7 @@ class ShipmentPollingPolicy
         }
 
         if ($record->status === OrderStatus::RETURN_REQUESTED->value) {
-            return ! empty($record->returnShipment?->carrier_shipment_id);
+            return $record->returnShipment !== null;
         }
 
         return ! empty($record->shipment?->carrier_shipment_id);

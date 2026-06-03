@@ -44,6 +44,7 @@ class ShipmentsRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
+            ->poll(fn (): ?string => $this->shouldPollShipments() ? '5s' : null)
             ->defaultSort('id', 'asc')
             ->columns([
                 TextColumn::make('carrier')
@@ -52,16 +53,19 @@ class ShipmentsRelationManager extends RelationManager
                     ->color('info'),
 
                 TextColumn::make('direction')
-                    ->label('Вид')
+                    ->label('Посока')
                     ->badge()
-                    ->color(fn (string $state): string => $state === 'return' ? 'warning' : 'primary')
-                    ->formatStateUsing(fn (string $state): string => $state === 'return' ? 'Връщане' : 'Изпращане'),
+                    ->colors([
+                        'primary' => 'outbound',
+                        'warning' => 'return',
+                    ])
+                    ->formatStateUsing(fn (?string $state): string => $state === 'return' ? 'Връщане' : 'Изпращане'),
 
                 TextColumn::make('tracking_number')
                     ->label('Номер за проследяване')
                     ->copyable()
                     ->copyMessage('Копирано!')
-                    ->placeholder('-'),
+                    ->placeholder('—'),
 
                 TextColumn::make('weight')
                     ->label('Тегло')
@@ -86,9 +90,9 @@ class ShipmentsRelationManager extends RelationManager
                         'delivered' => 'Доставен',
                         'error' => 'Грешка',
                         'returning' => 'Връща се към подателя',
-                        'returned' => 'Върната към подателя',
-                        'cancelled' => 'Анулирана',
-                        null, '' => '-',
+                        'returned' => 'Върнат на подателя',
+                        'cancelled' => 'Отменен',
+                        null, '' => '—',
                         default => $state,
                     }),
 
@@ -100,7 +104,7 @@ class ShipmentsRelationManager extends RelationManager
                     ->label('Очаквана дата на доставка')
                     ->state(fn ($record) => $this->resolveExpectedDeliveryAt($record->carrier_response))
                     ->dateTime('d.m.Y H:i')
-                    ->placeholder('-'),
+                    ->placeholder('—'),
             ])
             ->recordActions([
                 Action::make('download_label')
@@ -113,7 +117,7 @@ class ShipmentsRelationManager extends RelationManager
                         && $record->status !== 'cancelled'
                         && Auth::user()->can('view shipments')),
             ])
-            ->emptyStateHeading('Няма доставка')
+            ->emptyStateHeading('Няма доставки')
             ->emptyStateIcon('heroicon-o-truck');
     }
 
@@ -144,5 +148,18 @@ class ShipmentsRelationManager extends RelationManager
     public function isReadOnly(): bool
     {
         return false;
+    }
+
+    private function shouldPollShipments(): bool
+    {
+        $order = $this->getOwnerRecord();
+
+        if (! $order) {
+            return false;
+        }
+
+        return $order->shipments()
+            ->whereIn('status', ['created', 'pending', 'confirmed', 'in_transit', 'returning'])
+            ->exists();
     }
 }

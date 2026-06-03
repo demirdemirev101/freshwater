@@ -8,15 +8,13 @@ use BackedEnum;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
-use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
-use Filament\Tables\Table;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Table;
 
 class MessagesResource extends Resource
 {
@@ -24,9 +22,15 @@ class MessagesResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-envelope';
 
-        protected static ?string $navigationLabel = 'Съобщения';
-        protected static ?string $modelLabel = 'Съобщение';
-        protected static ?string $pluralModelLabel = 'Съобщения';
+    protected static ?string $navigationLabel = 'Съобщения';
+
+    protected static string|\UnitEnum|null $navigationGroup = 'Комуникация';
+
+    protected static ?int $navigationSort = 1;
+
+    protected static ?string $modelLabel = 'съобщение';
+
+    protected static ?string $pluralModelLabel = 'Съобщения';
 
     public static function form(Schema $schema): Schema
     {
@@ -46,6 +50,7 @@ class MessagesResource extends Resource
                     ->disabled(),
             ]);
     }
+
     public static function table(Table $table): Table
     {
         return $table
@@ -72,9 +77,6 @@ class MessagesResource extends Resource
                     ->dateTime()
                     ->sortable(),
             ])
-            ->filters([
-                //
-            ])
             ->recordActions([
                 DeleteAction::make()
                     ->label('Изтрий'),
@@ -85,8 +87,7 @@ class MessagesResource extends Resource
                 BulkActionGroup::make([
                     DeleteBulkAction::make()
                         ->label('Изтрий избраните'),
-                ])
-                ->label('Групови действия'),
+                ])->label('Групови действия'),
             ]);
     }
 

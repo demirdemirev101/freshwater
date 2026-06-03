@@ -57,17 +57,52 @@ class EditOrder extends EditRecord
             return;
         }
 
-        $record = $this->getRecord();
+        $record = $this->getRecord()->loadMissing(['shipment', 'returnShipment']);
 
         if (! $record) {
             return;
         }
 
-        $changed = app(ShipmentTrackingSyncService::class)->syncShipmentTracking($record);
+        $freshRecord = $record->fresh(['shipment', 'returnShipment']);
+
+        if ($freshRecord && $this->hasShipmentUiChanges($record, $freshRecord)) {
+            $this->refreshUi();
+
+            return;
+        }
+
+        $changed = app(ShipmentTrackingSyncService::class)->syncShipmentTracking($freshRecord ?? $record);
 
         if ($changed) {
             $this->refreshUi();
         }
+    }
+
+    private function hasShipmentUiChanges($currentRecord, $freshRecord): bool
+    {
+        if ($currentRecord->status !== $freshRecord->status) {
+            return true;
+        }
+
+        return $this->shipmentSnapshot($currentRecord->shipment) !== $this->shipmentSnapshot($freshRecord->shipment)
+            || $this->shipmentSnapshot($currentRecord->returnShipment) !== $this->shipmentSnapshot($freshRecord->returnShipment);
+    }
+
+    private function shipmentSnapshot($shipment): ?array
+    {
+        if (! $shipment) {
+            return null;
+        }
+
+        return [
+            'id' => $shipment->id,
+            'status' => $shipment->status,
+            'tracking_number' => $shipment->tracking_number,
+            'carrier_shipment_id' => $shipment->carrier_shipment_id,
+            'label_url' => $shipment->label_url,
+            'sent_to_carrier_at' => optional($shipment->sent_to_carrier_at)?->toDateTimeString(),
+            'updated_at' => optional($shipment->updated_at)?->toDateTimeString(),
+        ];
     }
 
     protected function getHeaderActions(): array

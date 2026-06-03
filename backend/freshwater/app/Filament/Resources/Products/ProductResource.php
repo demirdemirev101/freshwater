@@ -10,12 +10,12 @@ use App\Filament\Resources\Products\RelationManagers\RelatedProductsRelationMana
 use App\Filament\Resources\Products\Schemas\ProductForm;
 use App\Filament\Resources\Products\Tables\ProductsTable;
 use App\Models\Product;
-use Illuminate\Support\Facades\Auth;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Auth;
 
 class ProductResource extends Resource
 {
@@ -24,20 +24,20 @@ class ProductResource extends Resource
     protected static string|BackedEnum|null $navigationIcon = Heroicon::ArchiveBox;
 
     protected static ?string $navigationLabel = 'Продукти';
+
+    protected static string|\UnitEnum|null $navigationGroup = 'Съдържание';
+
+    protected static ?int $navigationSort = 2;
+
     protected static ?string $modelLabel = 'продукт';
+
     protected static ?string $pluralModelLabel = 'Продукти';
 
-    /* ===============================
-     | Resource visibility (sidebar)
-     =============================== */
     public static function canAccess(): bool
     {
         return Auth::user()->can('view products');
     }
 
-    /* ===============================
-     | CRUD permissions
-     =============================== */
     public static function canCreate(): bool
     {
         return Auth::user()->can('create products');
@@ -47,19 +47,22 @@ class ProductResource extends Resource
     {
         return Auth::user()->can('edit products');
     }
+
     public static function canDelete($record): bool
     {
         return Auth::user()->can('delete products');
     }
+
     public static function canView($record): bool
     {
         return Auth::user()->can('view products');
     }
+
     public static function canViewAny(): bool
     {
         return Auth::user()->can('view products');
     }
-    //=============================
+
     public static function form(Schema $schema): Schema
     {
         return ProductForm::configure($schema);

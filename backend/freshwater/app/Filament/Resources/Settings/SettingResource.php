@@ -11,7 +11,6 @@ use App\Models\Setting;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Auth;
 
@@ -22,7 +21,13 @@ class SettingResource extends Resource
     protected static string|BackedEnum|null $navigationIcon = 'uni-setting-o';
 
     protected static ?string $navigationLabel = 'Настройки';
-     protected static ?string $modelLabel = 'настройки';
+
+    protected static string|\UnitEnum|null $navigationGroup = 'Система';
+
+    protected static ?int $navigationSort = 1;
+
+    protected static ?string $modelLabel = 'настройки';
+
     protected static ?string $pluralModelLabel = 'Настройки';
 
     public static function canAccess(): bool
@@ -55,7 +60,6 @@ class SettingResource extends Resource
         return Auth::user()->can('manage settings');
     }
 
-
     public static function form(Schema $schema): Schema
     {
         return SettingForm::configure($schema);
@@ -68,9 +72,7 @@ class SettingResource extends Resource
 
     public static function getRelations(): array
     {
-        return [
-            //
-        ];
+        return [];
     }
 
     public static function getPages(): array
