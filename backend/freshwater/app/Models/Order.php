@@ -38,6 +38,12 @@ class Order extends Model
         'total',
         'payment_method',
         'payment_status',
+        'stripe_checkout_session_id',
+        'stripe_payment_intent_id',
+        'stripe_charge_id',
+        'stripe_refund_id',
+        'refunded_amount',
+        'refunded_at',
         'notes'
     ];
 
@@ -48,6 +54,8 @@ class Order extends Model
         'holiday_delivery_day' => 'date',
         'order_confirmation_sent_at' => 'datetime',
         'admin_notification_sent_at' => 'datetime',
+        'refunded_at' => 'datetime',
+        'refunded_amount' => 'decimal:2',
     ];
 
     /**

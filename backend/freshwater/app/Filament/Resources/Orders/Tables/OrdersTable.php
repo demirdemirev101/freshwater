@@ -54,10 +54,10 @@ class OrdersTable
                     ->state(fn ($record) => PaymentStatus::tryFrom($record->payment_status)?->label() ?? $record->payment_status)
                     ->badge()
                     ->color(fn ($record) => match ($record->payment_status) {
-                        'pending' => 'warning',
-                        'unpaid' => 'warning',
+                        'pending', 'unpaid' => 'warning',
                         'paid' => 'success',
                         'failed' => 'danger',
+                        'partially_refunded' => 'info',
                         'refunded' => 'gray',
                         default => 'gray',
                     })
@@ -67,12 +67,14 @@ class OrdersTable
                     ->state(fn ($record) => match ($record->payment_method) {
                         'cod' => 'Наложен платеж',
                         'bank_transfer' => 'Банков превод',
+                        'stripe' => 'Stripe',
                         default => $record->payment_method,
                     })
                     ->badge()
                     ->color(fn ($record) => match ($record->payment_method) {
                         'cod' => 'info',
                         'bank_transfer' => 'primary',
+                        'stripe' => 'success',
                         default => 'gray',
                     }),
                 TextColumn::make('created_at')

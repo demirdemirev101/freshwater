@@ -9,6 +9,7 @@ enum PaymentStatus: string
     case PAID = 'paid';
     case FAILED = 'failed';
     case REFUNDED = 'refunded';
+    case PARTIALLY_REFUNDED = 'partially_refunded';
 
     public function label(): string
     {
@@ -18,6 +19,7 @@ enum PaymentStatus: string
             self::PAID => 'Платено',
             self::FAILED => 'Неуспешно плащане',
             self::REFUNDED => 'Върнати средства',
+            self::PARTIALLY_REFUNDED => 'Частично възстановено',
         };
     }
 }

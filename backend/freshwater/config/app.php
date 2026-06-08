@@ -56,6 +56,8 @@ return [
 
     'backend_url' => env('BACKEND_URL', 'http://192.168.1.101:8000'),
 
+    'frontend_url' => env('FRONTEND_URL', 'http://localhost:5173'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone

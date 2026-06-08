@@ -5,9 +5,12 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\ContactController;
+use App\Http\Controllers\StripeController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/products', [ProductApiController::class, 'index']);
+Route::get('/checkout/payment-methods', [CheckoutController::class, 'paymentMethods']);
+Route::post('/stripe/webhook', [StripeController::class, 'webhook']);
 
 Route::middleware('optional.sanctum')->group(function () {
     // Cart routes
